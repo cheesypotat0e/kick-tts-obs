@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -34,7 +34,9 @@
         const { voice, text } = ttsQueue[0];
 
         try {
-          const ttsUrl = `https://api.streamelements.com/kappa/v2/speech?voice=${voice}&text=${encodeURIComponent(text)}`;
+          const ttsUrl = `https://api.streamelements.com/kappa/v2/speech?voice=${voice}&text=${encodeURIComponent(
+            text
+          )}`;
 
           // Fetch the audio response from the API
           const response = await fetch(ttsUrl);
@@ -60,15 +62,25 @@
         }
       }
 
-      // function speakMessage(text) {
-      //   const utterance = new SpeechSynthesisUtterance(text);
-      //   const voices = speechSynthesis.getVoices();
-      //   const googleVoice = voices.find((voice) =>
-      //     voice.name.includes("Google US English"),
-      //   );
-      //   utterance.voice = googleVoice;
-      //   speechSynthesis.speak(utterance);
-      // }
+      function playVideo(videoURL) {
+        const vidContainer = document.getElementById("video");
+        const iframe = document.createElement("iframe");
+
+        iframe.width = "560";
+        iframe.height = "315";
+        iframe.src = videoURL;
+        iframe.title = "video player";
+        iframe.frameBorder = "0";
+        iframe.allow =
+          "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+        iframe.allowFullscreen = true;
+
+        vidContainer.appendChild(iframe);
+      }
+
+      function clearVideos() {
+        document.getElementById("video").innerHTML = "";
+      }
 
       function connectToChatroom(
         roomId,
@@ -78,10 +90,10 @@
           ttsVoice = defaultTtsVoice,
           refreshToken = defaultRefreshToken,
           admins = [],
-        },
+        }
       ) {
         const ws = new WebSocket(
-          `wss://ws-us2.pusher.com/app/${clusterID}?protocol=7&client=js&version=${version}&flash=false`,
+          `wss://ws-us2.pusher.com/app/${clusterID}?protocol=7&client=js&version=${version}&flash=false`
         );
 
         ws.onopen = () => {
@@ -150,7 +162,7 @@
               // streamable
               if (isAdmin && chatMessage.content.startsWith("!st")) {
                 if (chatMessage.content.slice(4) == "clear") {
-                  document.getElementById("video").innerHTML = "";
+                  clearVideos();
                   return;
                 }
 
@@ -159,26 +171,14 @@
 
                 const streamableMatch =
                   chatMessage.content.match(streamableRegex);
+
                 const streamableId = streamableMatch
                   ? streamableMatch[1]
                   : undefined;
 
                 if (streamableId) {
                   const streamableURL = `https://streamable.com/e/${streamableId}?autoplay=1&loop=0`;
-
-                  const vidContainer = document.getElementById("video");
-                  const iframe = document.createElement("iframe");
-
-                  iframe.width = "560";
-                  iframe.height = "315";
-                  iframe.src = streamableURL;
-                  iframe.title = "Streamable video player";
-                  iframe.frameBorder = "0";
-                  iframe.allow =
-                    "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
-                  iframe.allowFullscreen = true;
-
-                  vidContainer.appendChild(iframe);
+                  playVideo(streamableURL);
                 }
               }
 
@@ -186,7 +186,7 @@
               if (isAdmin && chatMessage.content.startsWith("!yt")) {
                 // clear all videos
                 if (chatMessage.content.slice(4) == "clear") {
-                  document.getElementById("video").innerHTML = "";
+                  clearVideos();
                   return;
                 }
 
@@ -199,19 +199,7 @@
                 if (youtubeId) {
                   let youtubeURL = `https://www.youtube.com/embed/${youtubeId}?autoplay=1`;
 
-                  const vidContainer = document.getElementById("video");
-                  const iframe = document.createElement("iframe");
-
-                  iframe.width = "560";
-                  iframe.height = "315";
-                  iframe.src = youtubeURL;
-                  iframe.title = "YouTube video player";
-                  iframe.frameBorder = "0";
-                  iframe.allow =
-                    "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
-                  iframe.allowFullscreen = true;
-
-                  vidContainer.appendChild(iframe);
+                  playVideo(youtubeURL);
                 }
               }
             }
@@ -219,7 +207,7 @@
             if (message.event === "pusher:error") {
               console.error(
                 "Received Error Message: ",
-                JSON.parse(message.data),
+                JSON.parse(message.data)
               );
             }
           } catch (error) {
