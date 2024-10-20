@@ -10,6 +10,26 @@
     <script>
         const defaultClusterID = '32cbd69e4b950bf97679';
         const defaultVersion = '7.6.0';
+	const ttsVoice = 'Brian';
+
+	            async function fetchAndPlayTTS(text) {
+            try {
+                const ttsUrl = `https://api.streamelements.com/kappa/v2/speech?voice=${ttsVoice}&text=${encodeURIComponent(text)}`;
+
+                // Fetch the audio response from the API
+                const response = await fetch(ttsUrl);
+
+                // Convert the response into a Blob and create an audio object
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+
+                // Play the audio
+                audio.play();
+            } catch (error) {
+                console.error('Error fetching TTS:', error);
+            }
+        }
 
         function speakMessage(text) {
             const utterance = new SpeechSynthesisUtterance(text);
@@ -53,7 +73,7 @@
                         }
 
                         // Use speech synthesis to read the message aloud
-                        speakMessage(chatMessage.content);
+					fetchAndPlayTTS(chatMessage.content);
                     }
 
                     if (message.event === 'pusher:error') {
@@ -87,3 +107,4 @@
     </script>
 </body>
 </html>
+
