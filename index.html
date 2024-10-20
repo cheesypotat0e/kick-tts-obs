@@ -12,7 +12,24 @@
       const defaultRefreshToken = "refreshTTS";
       const defaultTtsVoice = "Brian";
 
-      async function fetchAndPlayTTS(text, { voice = defaultTtsVoice }) {
+      const ttsQueue = [];
+
+      function enqueMessage(text, { voice = defaultTtsVoice }) {
+        ttsQueue.push({ text, voice });
+
+        if (ttsQueue.length == 1) {
+          fetchAndPlayTTS();
+        }
+      }
+
+      async function fetchAndPlayTTS() {
+        if (ttsQueue.length == 0) {
+          return;
+        }
+
+        // peek at the first message in the queue
+        const { voice, text } = ttsQueue[0];
+
         try {
           const ttsUrl = `https://api.streamelements.com/kappa/v2/speech?voice=${voice}&text=${encodeURIComponent(text)}`;
 
@@ -23,6 +40,13 @@
           const audioBlob = await response.blob();
           const audioUrl = URL.createObjectURL(audioBlob);
           const audio = new Audio(audioUrl);
+
+          audio.onended = function () {
+            // deque the first messages in the queue
+            ttsQueue.shift();
+            // yield back to the queue
+            fetchAndPlayTTS();
+          };
 
           // Play the audio
           audio.play();
@@ -100,7 +124,7 @@
                   .replace(/^!s\s*/, "") // Removes "!s" prefix if present
                   .replace(/\[emote:[^\]]+:[^\]]+\]/g, ""); // Removes [emote:*:*] patterns
 
-                fetchAndPlayTTS(cleanedString, { voice: voice ?? ttsVoice });
+                enqueMessage(cleanedString, voice ?? ttsVoice);
               }
             }
 
