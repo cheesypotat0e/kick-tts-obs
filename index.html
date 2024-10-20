@@ -117,7 +117,7 @@
               }
 
               // Use speech synthesis to read the message aloud
-              if (chatMessage.content.startsWith("!s")) {
+              if (chatMessage.content.startsWith("!s ")) {
                 const voiceTokenRegex = /^!s\s*(\w+):/;
                 const tokenVoiceMatch =
                   chatMessage.content.match(voiceTokenRegex);
@@ -139,7 +139,7 @@
               }
 
               // update Volume
-              if (isAdmin && chatMessage.content.startsWith("!v")) {
+              if (isAdmin && chatMessage.content.startsWith("!v ")) {
                 const volVal = Number(parseFloat(chatMessage.content.slice(3)));
 
                 if (!Number.isNaN(volVal) && volVal >= 0 && volVal <= 1) {
@@ -147,8 +147,42 @@
                 }
               }
 
-              // youtube
+              // streamable
+              if (isAdmin && chatMessage.content.startsWith("!st")) {
+                if (chatMessage.content.slice(4) == "clear") {
+                  document.getElementById("video").innerHTML = "";
+                  return;
+                }
 
+                const streamableRegex =
+                  /(?:https?:\/\/)?streamable\.com\/([a-zA-Z0-9]+)/;
+
+                const streamableMatch =
+                  chatMessage.content.match(streamableRegex);
+                const streamableId = streamableMatch
+                  ? streamableMatch[1]
+                  : undefined;
+
+                if (streamableId) {
+                  const streamableURL = `https://streamable.com/e/${streamableId}?autoplay=1&loop=0`;
+
+                  const vidContainer = document.getElementById("video");
+                  const iframe = document.createElement("iframe");
+
+                  iframe.width = "560";
+                  iframe.height = "315";
+                  iframe.src = streamableURL;
+                  iframe.title = "Streamable video player";
+                  iframe.frameBorder = "0";
+                  iframe.allow =
+                    "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+                  iframe.allowFullscreen = true;
+
+                  vidContainer.appendChild(iframe);
+                }
+              }
+
+              // youtube
               if (isAdmin && chatMessage.content.startsWith("!yt")) {
                 // clear all videos
                 if (chatMessage.content.slice(4) == "clear") {
