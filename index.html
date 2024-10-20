@@ -12,9 +12,9 @@
       const defaultVersion = "7.6.0";
       const ttsVoice = "Brian";
 
-      async function fetchAndPlayTTS(text) {
+      async function fetchAndPlayTTS(text, { voice = "Brian" }) {
         try {
-          const ttsUrl = `https://api.streamelements.com/kappa/v2/speech?voice=${ttsVoice}&text=${encodeURIComponent(text)}`;
+          const ttsUrl = `https://api.streamelements.com/kappa/v2/speech?voice=${voice}&text=${encodeURIComponent(text)}`;
 
           // Fetch the audio response from the API
           const response = await fetch(ttsUrl);
@@ -81,11 +81,14 @@
 
               // Use speech synthesis to read the message aloud
               if (chatMessage.content.startsWith("!s")) {
+                const tokenVoiceMatch = chatMessage.content.match(tokenRegex);
+                const tokenVoice = tokenMatch ? tokenMatch[1] : null;
+
                 const cleanedString = chatMessage.content
                   .replace(/^!s\s*/, "") // Removes "!s" prefix if present
                   .replace(/\[emote:[^\]]+:[^\]]+\]/g, ""); // Removes [emote:*:*] patterns
 
-                fetchAndPlayTTS(cleanedString);
+                fetchAndPlayTTS(cleanedString, { tokenVoice });
               }
             }
 
