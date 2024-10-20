@@ -105,7 +105,7 @@
             if (message.event === "App\\Events\\ChatMessageEvent") {
               const chatMessage = JSON.parse(message.data);
 
-              const senderUsername = chatMessage?.sender?.username;
+              const senderUsername = chatMessage?.sender?.slug;
 
               const isAdmin = admins.includes(senderUsername);
 
@@ -209,7 +209,11 @@
       const version = urlParams.get("version") ?? defaultVersion;
       const refreshToken = urlParams.get("refreshToken") ?? defaultRefreshToken;
       const ttsVoice = urlParams.get("ttsVoice") ?? defaultTtsVoice;
-      const admins = urlParams.get("admins")?.split(",") ?? [];
+      const admins =
+        urlParams
+          .get("admins")
+          ?.split(",")
+          .map((admin) => admin.toLowerCase()) ?? [];
 
       if (!roomID) {
         console.error("Missing room Id");
