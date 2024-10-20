@@ -48,9 +48,9 @@
 
           currentAudio = new Audio(audioUrl);
 
-          audio.volume = currentVolume;
+          currentAudio.volume = currentVolume;
 
-          audio.onended = function () {
+          currentAudio.onended = function () {
             // deque the first messages in the queue
             ttsQueue.shift();
 
@@ -61,7 +61,7 @@
           };
 
           // Play the audio
-          audio.play();
+          currentAudio.play();
         } catch (error) {
           console.error("Error fetching TTS:", error);
         }
@@ -220,6 +220,35 @@
                   playVideo(youtubeURL);
                 }
               }
+
+              // config management
+              if (isAdmin && chatMessage.content.startsWith("!config ")) {
+                const tokens = chatMessage.content.slice(8).split(" ");
+
+                if (tokens.length < 2) {
+                  return;
+                }
+
+                const [key, value] = tokens;
+
+                // close current connection
+                ws.close();
+
+                // dispatch reconnect-chat event
+                document.dispatchEvent(
+                  new CustomEvent("reconnect-chat", {
+                    detail: {
+                      roomID,
+                      clusterID,
+                      ttsVoice,
+                      refreshToken,
+                      admins,
+                      // replace option
+                      [key]: value,
+                    },
+                  })
+                );
+              }
             }
 
             if (message.event === "pusher:error") {
@@ -241,6 +270,20 @@
           console.log("WebSocket connection closed");
         };
       }
+
+      // reconnect event handler
+
+      document.addEventListener(
+        "reconnect-chat",
+        ({ detail: { roomID, clusterID, ttsVoice, refreshToken, admins } }) => {
+          connectToChatroom(roomID, {
+            clusterID,
+            ttsVoice,
+            refreshToken,
+            admins,
+          });
+        }
+      );
 
       // Get parameters from URL (roomId, clusterID, version)
       const urlParams = new URLSearchParams(window.location.search);
