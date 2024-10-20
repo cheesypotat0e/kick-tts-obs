@@ -78,7 +78,7 @@
               // Use speech synthesis to read the message aloud
               if (chatMessage.content.startsWith("!s")) {
                 const tokenVoiceMatch = chatMessage.content.match(tokenRegex);
-                const tokenVoice = tokenMatch ? tokenMatch[1] : null;
+                const tokenVoice = tokenVoiceMatch ? tokenMatch[1] : null;
 
                 const cleanedString = chatMessage.content
                   .replace(/^!s\s*/, "") // Removes "!s" prefix if present
