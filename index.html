@@ -77,6 +77,7 @@
 
               // Use speech synthesis to read the message aloud
               if (chatMessage.content.startsWith("!s")) {
+                const tokenRegex = /^!s\s*(\w+):/;
                 const tokenVoiceMatch = chatMessage.content.match(tokenRegex);
                 const tokenVoice = tokenVoiceMatch ? tokenVoiceMatch[1] : null;
 
