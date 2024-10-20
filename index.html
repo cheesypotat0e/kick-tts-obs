@@ -12,6 +12,8 @@
       const defaultRefreshToken = "refreshTTS";
       const defaultTtsVoice = "Brian";
 
+      let currentVolume = 1.0;
+
       const ttsQueue = [];
 
       function enqueMessage(text, { voice = defaultTtsVoice }) {
@@ -40,6 +42,8 @@
           const audioBlob = await response.blob();
           const audioUrl = URL.createObjectURL(audioBlob);
           const audio = new Audio(audioUrl);
+
+          audio.volume = currentVolume;
 
           audio.onended = function () {
             // deque the first messages in the queue
@@ -125,6 +129,15 @@
                   .replace(/\[emote:[^\]]+:[^\]]+\]/g, ""); // Removes [emote:*:*] patterns
 
                 enqueMessage(cleanedString, voice ?? ttsVoice);
+              }
+
+              // update Volume
+              if (chatMessage.content.startsWith("!v")) {
+                const volVal = Number(parseFloat(chatMessage.content.slice(3)));
+
+                if (!Number.isNaN(volVal) && volVal >= 0 && volVal <= 1) {
+                  currentVolume = volVal;
+                }
               }
             }
 
