@@ -76,6 +76,7 @@
           version = defaultVersion,
           ttsVoice = defaultTtsVoice,
           refreshToken = defaultRefreshToken,
+          admins = [],
         },
       ) {
         const ws = new WebSocket(
@@ -102,10 +103,15 @@
             // Check if the message is a chat message event
             if (message.event === "App\\Events\\ChatMessageEvent") {
               const chatMessage = JSON.parse(message.data);
+
+              const senderUsername = chatMessage?.sender?.username;
+
+              const isAdmin = admins.includes(senderUsername);
+
               console.log("Received chat message:", chatMessage.content);
 
               // trigger an app refresh
-              if (chatMessage.content === refreshToken) {
+              if (isAdmin && chatMessage.content === refreshToken) {
                 location.reload();
               }
 
@@ -132,7 +138,7 @@
               }
 
               // update Volume
-              if (chatMessage.content.startsWith("!v")) {
+              if (isAdmin && chatMessage.content.startsWith("!v")) {
                 const volVal = Number(parseFloat(chatMessage.content.slice(3)));
 
                 if (!Number.isNaN(volVal) && volVal >= 0 && volVal <= 1) {
@@ -168,6 +174,7 @@
       const version = urlParams.get("version") ?? defaultVersion;
       const refreshToken = urlParams.get("refreshToken") ?? defaultRefreshToken;
       const ttsVoice = urlParams.get("ttsVoice") ?? defaultTtsVoice;
+      const admins = urlParams.get("admins")?.split(",") ?? [];
 
       if (!roomID) {
         console.error("Missing room Id");
@@ -177,6 +184,7 @@
           version,
           refreshToken,
           ttsVoice,
+          admins,
         });
       }
     </script>
