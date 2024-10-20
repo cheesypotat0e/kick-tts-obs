@@ -8,10 +8,11 @@
   <body>
     <script>
       const defaultClusterID = "32cbd69e4b950bf97679";
-      const defaultVersion = "7.6.0";
-      const ttsVoice = "Brian";
+      const defaultVersion = "8.4.0-rc2";
+      const defaultRefreshToken = "refreshTTS";
+      const defaultTtsVoice = "Brian";
 
-      async function fetchAndPlayTTS(text, { voice = "Brian" }) {
+      async function fetchAndPlayTTS(text, { voice = defaultTtsVoice }) {
         try {
           const ttsUrl = `https://api.streamelements.com/kappa/v2/speech?voice=${voice}&text=${encodeURIComponent(text)}`;
 
@@ -30,19 +31,24 @@
         }
       }
 
-      function speakMessage(text) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        const voices = speechSynthesis.getVoices();
-        const googleVoice = voices.find((voice) =>
-          voice.name.includes("Google US English"),
-        );
-        utterance.voice = googleVoice;
-        speechSynthesis.speak(utterance);
-      }
+      // function speakMessage(text) {
+      //   const utterance = new SpeechSynthesisUtterance(text);
+      //   const voices = speechSynthesis.getVoices();
+      //   const googleVoice = voices.find((voice) =>
+      //     voice.name.includes("Google US English"),
+      //   );
+      //   utterance.voice = googleVoice;
+      //   speechSynthesis.speak(utterance);
+      // }
 
       function connectToChatroom(
         roomId,
-        { clusterID = defaultClusterID, version = defaultVersion },
+        {
+          clusterID = defaultClusterID,
+          version = defaultVersion,
+          ttsVoice = defaultTtsVoice,
+          refreshToken = defaultRefreshToken,
+        },
       ) {
         const ws = new WebSocket(
           `wss://ws-us2.pusher.com/app/${clusterID}?protocol=7&client=js&version=${version}&flash=false`,
@@ -70,7 +76,8 @@
               const chatMessage = JSON.parse(message.data);
               console.log("Received chat message:", chatMessage.content);
 
-              if (chatMessage.content === "right there baba") {
+              // trigger an app refresh
+              if (chatMessage.content === refreshToken) {
                 location.reload();
               }
 
@@ -93,7 +100,7 @@
                   .replace(/^!s\s*/, "") // Removes "!s" prefix if present
                   .replace(/\[emote:[^\]]+:[^\]]+\]/g, ""); // Removes [emote:*:*] patterns
 
-                fetchAndPlayTTS(cleanedString, { voice });
+                fetchAndPlayTTS(cleanedString, { voice: voice ?? ttsVoice });
               }
             }
 
@@ -120,13 +127,20 @@
       // Get parameters from URL (roomId, clusterID, version)
       const urlParams = new URLSearchParams(window.location.search);
       const roomID = urlParams.get("roomId");
-      const clusterID = urlParams.get("clusterID");
-      const version = urlParams.get("version");
+      const clusterID = urlParams.get("clusterID") ?? defaultClusterID;
+      const version = urlParams.get("version") ?? defaultVersion;
+      const refreshToken = urlParams.get("refreshToken") ?? defaultRefreshToken;
+      const ttsVoice = urlParams.get("ttsVoice") ?? defaultTtsVoice;
 
       if (!roomID) {
         console.error("Missing room Id");
       } else {
-        connectToChatroom(roomID, { clusterID, version });
+        connectToChatroom(roomID, {
+          clusterID,
+          version,
+          refreshToken,
+          ttsVoice,
+        });
       }
     </script>
   </body>
