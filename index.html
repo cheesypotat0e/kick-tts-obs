@@ -79,13 +79,19 @@
               if (chatMessage.content.startsWith("!s")) {
                 const tokenRegex = /^!s\s*(\w+):/;
                 const tokenVoiceMatch = chatMessage.content.match(tokenRegex);
-                const tokenVoice = tokenVoiceMatch ? tokenVoiceMatch[1] : null;
+                const voiceToken = tokenVoiceMatch
+                  ? tokenVoiceMatch[1]
+                  : undefined;
+
+                const voice =
+                  voiceToken[0].toUpperCase() +
+                  voiceToken.slice(1).toLowerCase();
 
                 const cleanedString = chatMessage.content
                   .replace(/^!s\s*/, "") // Removes "!s" prefix if present
                   .replace(/\[emote:[^\]]+:[^\]]+\]/g, ""); // Removes [emote:*:*] patterns
 
-                fetchAndPlayTTS(cleanedString, { tokenVoice });
+                fetchAndPlayTTS(cleanedString, { voice });
               }
             }
 
