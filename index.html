@@ -6,6 +6,7 @@
     <title>Kick TTS</title>
   </head>
   <body>
+    <div id="video"></div>
     <script>
       const defaultClusterID = "32cbd69e4b950bf97679";
       const defaultVersion = "8.4.0-rc2";
@@ -143,6 +144,40 @@
 
                 if (!Number.isNaN(volVal) && volVal >= 0 && volVal <= 1) {
                   currentVolume = volVal;
+                }
+              }
+
+              // youtube
+
+              if (isAdmin && chatMessage.content.startsWith("!yt")) {
+                // clear all videos
+                if (chatMessage.content.slice(4) == "clear") {
+                  document.getElementById("video").innerHTML = "";
+                  return;
+                }
+
+                const youtubeRegex =
+                  /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/;
+                const youtubeMatch = chatMessage.content.match(youtubeRegex);
+
+                const youtubeId = youtubeMatch ? youtubeMatch[1] : undefined;
+
+                if (youtubeId) {
+                  let youtubeURL = `https://www.youtube.com/embed/${youtubeId}?autoplay=1`;
+
+                  const vidContainer = document.getElementById("video");
+                  const iframe = document.createElement("iframe");
+
+                  iframe.width = "560";
+                  iframe.height = "315";
+                  iframe.src = youtubeURL;
+                  iframe.title = "YouTube video player";
+                  iframe.frameBorder = "0";
+                  iframe.allow =
+                    "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+                  iframe.allowFullscreen = true;
+
+                  vidContainer.appendChild(iframe);
                 }
               }
             }
