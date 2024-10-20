@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kick TTS</title>
+</head>
+<body>
+    <script>
+        const defaultClusterID = '32cbd69e4b950bf97679';
+        const defaultVersion = '7.6.0';
+
+        function speakMessage(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            const voices = speechSynthesis.getVoices();
+            const googleVoice = voices.find(voice => voice.name.includes('Google US English'));
+            utterance.voice = googleVoice;
+            speechSynthesis.speak(utterance);
+        }
+
+        function connectToChatroom(roomId, {clusterID = defaultClusterID, version = defaultVersion}) {
+            const ws = new WebSocket(`wss://ws-us2.pusher.com/app/${clusterID}?protocol=7&client=js&version=${version}&flash=false`);
+
+            ws.onopen = () => {
+                console.log('Connected to WebSocket');
+
+                const subscribeMessage = {
+                    event: 'pusher:subscribe',
+                    data: {
+                        channel: `chatrooms.${roomId}.v2`,
+                        auth: '',
+                    },
+                };
+                ws.send(JSON.stringify(subscribeMessage));
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    console.log(message);
+
+                    // Check if the message is a chat message event
+                    if (message.event === 'App\\Events\\ChatMessageEvent') {
+                        const chatMessage = JSON.parse(message.data);
+                        console.log('Received chat message:', chatMessage.content);
+
+                        // Trigger page reload on a specific message
+                        if (chatMessage.content === "right there baba") {
+                            location.reload();
+                        }
+
+                        // Use speech synthesis to read the message aloud
+                        speakMessage(chatMessage.content);
+                    }
+
+                    if (message.event === 'pusher:error') {
+                        console.error('Received Error Message: ', JSON.parse(message.data));
+                    }
+                } catch (error) {
+                    console.error('Error parsing message:', error);
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket connection closed');
+            };
+        }
+
+        // Get parameters from URL (roomId, clusterID, version)
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomID = urlParams.get('roomId');
+        const clusterID = urlParams.get('clusterID');
+        const version = urlParams.get('version');
+
+        if (!roomID) {
+            console.error("Missing room Id");
+        } else {
+            connectToChatroom(roomID, {clusterID, version});
+        }
+    </script>
+</body>
+</html>
+
