@@ -231,23 +231,53 @@
 
                 const [key, value] = tokens;
 
-                // close current connection
-                ws.close();
+                if (key === "removeadmin" || key === "addadmin") {
+                  const user = tokens[2];
 
-                // dispatch reconnect-chat event
-                document.dispatchEvent(
-                  new CustomEvent("reconnect-chat", {
-                    detail: {
-                      roomID,
-                      clusterID,
-                      ttsVoice,
-                      refreshToken,
-                      admins,
-                      // replace option
-                      [key]: value,
-                    },
-                  })
-                );
+                  if (key === "removeadmin") {
+                    const i = admins.indexOf(value);
+
+                    if (i >= 0) {
+                      admins.splice(i, 1);
+                    }
+                  } else {
+                    // addadmin
+
+                    admins.push(value);
+                  }
+
+                  document.dispatchEvent(
+                    new CustomEvent("reconnect-chat", {
+                      detail: {
+                        roomID,
+                        clusterID,
+                        ttsVoice,
+                        refreshToken,
+                        admins,
+                      },
+                    })
+                  );
+                } else {
+                  const [key, value] = tokens;
+
+                  // close current connection
+                  ws.close();
+
+                  // dispatch reconnect-chat event
+                  document.dispatchEvent(
+                    new CustomEvent("reconnect-chat", {
+                      detail: {
+                        roomID,
+                        clusterID,
+                        ttsVoice,
+                        refreshToken,
+                        admins,
+                        // replace option
+                        [key]: value,
+                      },
+                    })
+                  );
+                }
               }
             }
 
