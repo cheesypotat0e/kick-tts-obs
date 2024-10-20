@@ -64,7 +64,6 @@
         ws.onmessage = (event) => {
           try {
             const message = JSON.parse(event.data);
-            console.log(message);
 
             // Check if the message is a chat message event
             if (message.event === "App\\Events\\ChatMessageEvent") {
@@ -77,17 +76,20 @@
 
               // Use speech synthesis to read the message aloud
               if (chatMessage.content.startsWith("!s")) {
-                const tokenRegex = /^!s\s*(\w+):/;
-                const tokenVoiceMatch = chatMessage.content.match(tokenRegex);
+                const voiceTokenRegex = /^!s\s*(\w+):/;
+                const tokenVoiceMatch =
+                  chatMessage.content.match(voiceTokenRegex);
                 const voiceToken = tokenVoiceMatch
                   ? tokenVoiceMatch[1]
                   : undefined;
 
-                const voice =
-                  voiceToken[0].toUpperCase() +
-                  voiceToken.slice(1).toLowerCase();
+                const voice = voiceToken
+                  ? voiceToken[0].toUpperCase() +
+                    voiceToken.slice(1).toLowerCase()
+                  : undefined;
 
                 const cleanedString = chatMessage.content
+                  .replace(voiceTokenRegex, "") // remove voice tokens
                   .replace(/^!s\s*/, "") // Removes "!s" prefix if present
                   .replace(/\[emote:[^\]]+:[^\]]+\]/g, ""); // Removes [emote:*:*] patterns
 
