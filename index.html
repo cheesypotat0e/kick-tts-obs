@@ -80,7 +80,13 @@
               }
 
               // Use speech synthesis to read the message aloud
-              fetchAndPlayTTS(chatMessage.content);
+              if (chatMessage.content.startsWith("!s")) {
+                const cleanedString = chatMessage.content
+                  .replace(/^!s\s*/, "") // Removes "!s" prefix if present
+                  .replace(/\[emote:[^\]]+:[^\]]+\]/g, ""); // Removes [emote:*:*] patterns
+
+                fetchAndPlayTTS(cleanedString);
+              }
             }
 
             if (message.event === "pusher:error") {
