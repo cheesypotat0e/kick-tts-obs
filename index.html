@@ -6,7 +6,6 @@
     <title>Kick TTS</title>
   </head>
   <body>
-    <h1>Hello Baba</h1>
     <script>
       const defaultClusterID = "32cbd69e4b950bf97679";
       const defaultVersion = "7.6.0";
@@ -72,9 +71,6 @@
               const chatMessage = JSON.parse(message.data);
               console.log("Received chat message:", chatMessage.content);
 
-              document.querySelector("h1").innerText = chatMessage.content;
-
-              // Trigger page reload on a specific message
               if (chatMessage.content === "right there baba") {
                 location.reload();
               }
