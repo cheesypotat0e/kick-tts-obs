@@ -234,10 +234,10 @@
                 const [key, value] = tokens;
 
                 if (key === "removeadmin" || key === "addadmin") {
-                  const user = tokens[2];
+                  const user = value.toLowerCase();
 
                   if (key === "removeadmin") {
-                    const i = admins.indexOf(value);
+                    const i = admins.indexOf(user);
 
                     if (i >= 0) {
                       admins.splice(i, 1);
@@ -245,7 +245,7 @@
                   } else {
                     // addadmin
 
-                    admins.push(value);
+                    admins.push(user);
                   }
 
                   document.dispatchEvent(
