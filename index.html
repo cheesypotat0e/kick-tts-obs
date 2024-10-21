@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -15,6 +15,7 @@
 
       let currentVolume = 1.0;
       let currentAudio = null;
+      let currentSpeed = 1.0;
 
       const ttsQueue = [];
 
@@ -36,7 +37,7 @@
 
         try {
           const ttsUrl = `https://api.streamelements.com/kappa/v2/speech?voice=${voice}&text=${encodeURIComponent(
-            text
+            text,
           )}`;
 
           // Fetch the audio response from the API
@@ -49,6 +50,7 @@
           currentAudio = new Audio(audioUrl);
 
           currentAudio.volume = currentVolume;
+          currentAudio.playbackRate = currentSpeed;
 
           currentAudio.onended = function () {
             // deque the first messages in the queue
@@ -95,10 +97,10 @@
           ttsVoice = defaultTtsVoice,
           refreshToken = defaultRefreshToken,
           admins = [],
-        }
+        },
       ) {
         const ws = new WebSocket(
-          `wss://ws-us2.pusher.com/app/${clusterID}?protocol=7&client=js&version=${version}&flash=false`
+          `wss://ws-us2.pusher.com/app/${clusterID}?protocol=7&client=js&version=${version}&flash=false`,
         );
 
         ws.onopen = () => {
@@ -165,7 +167,7 @@
                   .replace(/^!s\s*/, "") // Removes "!s" prefix if present
                   .replace(/\[emote:[^\]]+:[^\]]+\]/g, ""); // Removes [emote:*:*] patterns
 
-                enqueMessage(cleanedString, voice ?? ttsVoice);
+                enqueMessage(cleanedString, { voice: voice ?? ttsVoice });
               }
 
               // update Volume
@@ -255,7 +257,7 @@
                         refreshToken,
                         admins,
                       },
-                    })
+                    }),
                   );
                 } else {
                   const [key, value] = tokens;
@@ -275,7 +277,7 @@
                         // replace option
                         [key]: value,
                       },
-                    })
+                    }),
                   );
                 }
               }
@@ -284,7 +286,7 @@
             if (message.event === "pusher:error") {
               console.error(
                 "Received Error Message: ",
-                JSON.parse(message.data)
+                JSON.parse(message.data),
               );
             }
           } catch (error) {
@@ -312,7 +314,7 @@
             refreshToken,
             admins,
           });
-        }
+        },
       );
 
       // Get parameters from URL (roomId, clusterID, version)
@@ -322,6 +324,9 @@
       const version = urlParams.get("version") ?? defaultVersion;
       const refreshToken = urlParams.get("refreshToken") ?? defaultRefreshToken;
       const ttsVoice = urlParams.get("ttsVoice") ?? defaultTtsVoice;
+
+      currentSpeed = parseFloat(urlParams.get("ttsSpeed")) ?? 1.0;
+
       const admins =
         urlParams
           .get("admins")
