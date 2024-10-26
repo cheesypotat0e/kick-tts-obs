@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kick TTS</title>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"
+      integrity="sha512-xi/RZRIF/S0hJ+yJJYuZ5yk6/8pCiRlEXZzoguSMl+vk2i3m6UjUO/WcZ11blRL/O+rnj94JRGwt/CHbc9+6EA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
   </head>
   <body>
     <div id="video"></div>
@@ -47,12 +53,15 @@
           const audioBlob = await response.blob();
           const audioUrl = URL.createObjectURL(audioBlob);
 
-          currentAudio = new Audio(audioUrl);
+          currentAudio = new Howl({
+            src: [audioUrl],
+            format: ["mp3"],
+          });
 
-          currentAudio.volume = currentVolume;
-          currentAudio.playbackRate = currentSpeed;
+          currentAudio.volume(currentVolume);
+          currentAudio.rate(currentSpeed);
 
-          currentAudio.onended = function () {
+          currentAudio.on("end", function () {
             // deque the first messages in the queue
             ttsQueue.shift();
 
@@ -60,14 +69,17 @@
 
             // yield back to the queue
             fetchAndPlayTTS();
-          };
+          });
 
-          currentAudio.onerror = function (error) {
+          function audioError(id, error) {
             console.error("Error fetching TTS:", error);
             ttsQueue.shift();
             currentAudio = null;
             fetchAndPlayTTS();
-          };
+          }
+
+          currentAudio.on("loaderror", audioError);
+          currentAudio.on("playerror", audioError);
 
           // Play the audio
           currentAudio.play();
