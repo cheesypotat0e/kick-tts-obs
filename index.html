@@ -19,13 +19,15 @@
       const defaultRefreshToken = "refreshTTS";
       const defaultTtsVoice = "Brian";
 
+      let ws;
+
       let urlParams;
       let roomID;
       let clusterID;
       let version;
       let refreshToken;
       let ttsVoice;
-      let journeyFunctionName;
+      let journey;
 
       let currentVolume = 1.0;
       let currentAudio = null;
@@ -52,8 +54,8 @@
         try {
           let ttsUrl;
 
-          if (voice === "French" && journeyFunctionName) {
-            ttsUrl = `https://${journeyFunctionName}.cloudfunctions.net/tts?text=${encodeURIComponent(text)}`;
+          if (voice === "French" && journey) {
+            ttsUrl = `https://${journey}.cloudfunctions.net/tts?text=${encodeURIComponent(text)}`;
           } else {
             ttsUrl = `https://api.streamelements.com/kappa/v2/speech?voice=${voice}&text=${encodeURIComponent(
               text,
@@ -141,7 +143,7 @@
           admins = [],
         },
       ) {
-        const ws = new WebSocket(
+        ws = new WebSocket(
           `wss://ws-us2.pusher.com/app/${clusterID}?protocol=7&client=js&version=${version}&flash=false`,
         );
 
@@ -151,7 +153,7 @@
           const subscribeMessage = {
             event: "pusher:subscribe",
             data: {
-              channel: `chatrooms.${roomId}.v2`,
+              channel: `chatrooms.${roomID}.v2`,
               auth: "",
             },
           };
@@ -302,14 +304,12 @@
                         ttsVoice,
                         refreshToken,
                         admins,
+                        journey,
                       },
                     }),
                   );
                 } else {
                   const [key, value] = tokens;
-
-                  // close current connection
-                  ws.close();
 
                   // dispatch reconnect-chat event
                   document.dispatchEvent(
@@ -320,6 +320,7 @@
                         ttsVoice,
                         refreshToken,
                         admins,
+                        journey,
                         // replace option
                         [key]: value,
                       },
@@ -355,18 +356,14 @@
 
       // reconnect event handler
 
-      document.addEventListener(
-        "reconnect-chat",
-        ({ detail: { roomID, clusterID, ttsVoice, refreshToken, admins } }) => {
-          clusterID = detail.clusterID;
-          roomID = detail.roomID;
-          ttsVoice = detail.ttsVoice;
-          refreshToken = detail.refreshToken;
-          admins = detail.admin;
+      document.addEventListener("reconnect-chat", ({ detail }) => {
+        clusterID = detail.clusterID;
+        ttsVoice = detail.ttsVoice;
+        refreshToken = detail.refreshToken;
+        journey = detail.journey;
 
-          connect();
-        },
-      );
+        ws.close();
+      });
 
       // Get parameters from URL (roomId, clusterID, version)
       urlParams = new URLSearchParams(window.location.search);
@@ -375,7 +372,7 @@
       version = urlParams.get("version") ?? defaultVersion;
       refreshToken = urlParams.get("refreshToken") ?? defaultRefreshToken;
       ttsVoice = urlParams.get("ttsVoice") ?? defaultTtsVoice;
-      journeyFunctionName = urlParams.get("journey");
+      journey = urlParams.get("journey");
 
       currentSpeed = parseFloat(urlParams.get("ttsSpeed") ?? 1.0);
 
@@ -392,7 +389,6 @@
           refreshToken,
           ttsVoice,
           admins,
-          journeyFunctionName,
         });
       }
 
