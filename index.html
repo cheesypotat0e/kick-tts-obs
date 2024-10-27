@@ -19,6 +19,14 @@
       const defaultRefreshToken = "refreshTTS";
       const defaultTtsVoice = "Brian";
 
+      let urlParams;
+      let roomID;
+      let clusterID;
+      let version;
+      let refreshToken;
+      let ttsVoice;
+      let journeyFunctionName;
+
       let currentVolume = 1.0;
       let currentAudio = null;
       let currentSpeed = 1.0;
@@ -42,20 +50,28 @@
         const { voice, text } = ttsQueue[0];
 
         try {
-          const ttsUrl = `https://api.streamelements.com/kappa/v2/speech?voice=${voice}&text=${encodeURIComponent(
-            text,
-          )}`;
+          let ttsUrl;
+
+          if (voice === "French" && journeyFunctionName) {
+            ttsUrl = `https://${journeyFunctionName}.cloudfunctions.net/tts?text=${encodeURIComponent(text)}`;
+          } else {
+            ttsUrl = `https://api.streamelements.com/kappa/v2/speech?voice=${voice}&text=${encodeURIComponent(
+              text,
+            )}`;
+          }
 
           // Fetch the audio response from the API
           const response = await fetch(ttsUrl);
+          const audioBuffer = await response.arrayBuffer();
 
-          // Convert the response into a Blob and create an audio object
-          const audioBlob = await response.blob();
-          const audioUrl = URL.createObjectURL(audioBlob);
+          const base64 = btoa(
+            String.fromCharCode(...new Uint8Array(audioBuffer)),
+          );
+
+          const audioText = `data:audio/${voice === "French" ? "ogg" : "mp3"};base64,${base64}`;
 
           currentAudio = new Howl({
-            src: [audioUrl],
-            format: ["mp3"],
+            src: [audioText],
           });
 
           currentAudio.volume(currentVolume);
@@ -140,6 +156,10 @@
             },
           };
           ws.send(JSON.stringify(subscribeMessage));
+
+          if (ttsQueue.length > 0) {
+            fetchAndPlayTTS();
+          }
         };
 
         ws.onmessage = (event) => {
@@ -326,6 +346,10 @@
 
         ws.onclose = () => {
           console.log("WebSocket connection closed");
+
+          console.log("Reconnecting...");
+
+          connect();
         };
       }
 
@@ -334,22 +358,24 @@
       document.addEventListener(
         "reconnect-chat",
         ({ detail: { roomID, clusterID, ttsVoice, refreshToken, admins } }) => {
-          connectToChatroom(roomID, {
-            clusterID,
-            ttsVoice,
-            refreshToken,
-            admins,
-          });
+          clusterID = detail.clusterID;
+          roomID = detail.roomID;
+          ttsVoice = detail.ttsVoice;
+          refreshToken = detail.refreshToken;
+          admins = detail.admin;
+
+          connect();
         },
       );
 
       // Get parameters from URL (roomId, clusterID, version)
-      const urlParams = new URLSearchParams(window.location.search);
-      const roomID = urlParams.get("roomId");
-      const clusterID = urlParams.get("clusterID") ?? defaultClusterID;
-      const version = urlParams.get("version") ?? defaultVersion;
-      const refreshToken = urlParams.get("refreshToken") ?? defaultRefreshToken;
-      const ttsVoice = urlParams.get("ttsVoice") ?? defaultTtsVoice;
+      urlParams = new URLSearchParams(window.location.search);
+      roomID = urlParams.get("roomId");
+      clusterID = urlParams.get("clusterID") ?? defaultClusterID;
+      version = urlParams.get("version") ?? defaultVersion;
+      refreshToken = urlParams.get("refreshToken") ?? defaultRefreshToken;
+      ttsVoice = urlParams.get("ttsVoice") ?? defaultTtsVoice;
+      journeyFunctionName = urlParams.get("journey");
 
       currentSpeed = parseFloat(urlParams.get("ttsSpeed") ?? 1.0);
 
@@ -359,16 +385,21 @@
           ?.split(",")
           .map((admin) => admin.toLowerCase()) ?? [];
 
-      if (!roomID) {
-        console.error("Missing room Id");
-      } else {
+      function connect() {
         connectToChatroom(roomID, {
           clusterID,
           version,
           refreshToken,
           ttsVoice,
           admins,
+          journeyFunctionName,
         });
+      }
+
+      if (!roomID) {
+        console.error("Missing room Id");
+      } else {
+        connect();
       }
     </script>
   </body>
