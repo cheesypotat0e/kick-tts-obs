@@ -330,6 +330,14 @@
               }
             }
 
+            if (isAdmin && chatMessage.content.startsWith("!speed ")) {
+              const sp = parseFloat(chatMessage.content.slice(7));
+
+              if (!Number.isNaN(sp)) {
+                currentSpeed = sp;
+              }
+            }
+
             if (message.event === "pusher:error") {
               console.error(
                 "Received Error Message: ",
