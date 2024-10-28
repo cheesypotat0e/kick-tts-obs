@@ -54,8 +54,8 @@
         try {
           let ttsUrl;
 
-          if (voice === "French" && journey) {
-            ttsUrl = `https://${journey}.cloudfunctions.net/tts?text=${encodeURIComponent(text)}`;
+          if ((voice === "Spanish" || voice === "French") && journey) {
+            ttsUrl = `https://${journey}.cloudfunctions.net/tts?text=${encodeURIComponent(text)}&lang=${voice}`;
           } else {
             ttsUrl = `https://api.streamelements.com/kappa/v2/speech?voice=${voice}&text=${encodeURIComponent(
               text,
@@ -70,7 +70,7 @@
             String.fromCharCode(...new Uint8Array(audioBuffer)),
           );
 
-          const audioText = `data:audio/${voice === "French" ? "ogg" : "mp3"};base64,${base64}`;
+          const audioText = `data:audio/${voice === "French" || voice === "Spanish" ? "ogg" : "mp3"};base64,${base64}`;
 
           currentAudio = new Howl({
             src: [audioText],
