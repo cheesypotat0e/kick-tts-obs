@@ -403,6 +403,14 @@
               if (isAdmin && chatMessage.content === "!clear") {
                 clearStoredSettings();
               }
+
+              if (isAdmin && chatMessage.content == "!voice ") {
+                const voice = chatMessage.content.slice(7);
+
+                if (voice) {
+                  settings.ttsVoice = voice;
+                }
+              }
             }
 
             if (message.event === "pusher:error") {
