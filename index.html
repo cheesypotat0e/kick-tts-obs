@@ -404,7 +404,7 @@
                 clearStoredSettings();
               }
 
-              if (isAdmin && chatMessage.content == "!voice ") {
+              if (isAdmin && chatMessage.content.startsWith("!voice ")) {
                 const voice = chatMessage.content.slice(7);
 
                 if (voice) {
