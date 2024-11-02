@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -14,28 +14,110 @@
   <body>
     <div id="video"></div>
     <script>
+      const kickObsTTSSettings = "kick-obs-tts-settings";
+
       const defaultClusterID = "32cbd69e4b950bf97679";
       const defaultVersion = "8.4.0-rc2";
       const defaultRefreshToken = "refreshTTS";
       const defaultTtsVoice = "Brian";
 
-      let ws;
+      let settings = {
+        roomID: undefined,
 
-      let urlParams;
-      let roomID;
-      let clusterID;
-      let version;
-      let refreshToken;
-      let ttsVoice;
-      let journey;
+        clusterID: defaultClusterID,
 
-      let currentVolume = 1.0;
-      let currentAudio = null;
-      let currentSpeed = 1.0;
+        version: defaultVersion,
 
-      const ttsQueue = [];
+        refreshToken: defaultRefreshToken,
+
+        ttsVoice: defaultTtsVoice,
+
+        ttsSpeed: 1.0,
+
+        ttsVolume: 1.0,
+
+        journey: undefined,
+
+        admins: [],
+      };
+
+      let state = {
+        ws: undefined,
+        ttsQueue: [],
+        currentAudio: undefined,
+      };
+
+      function applyOverrides(target, source) {
+        const settings = Object.assign({}, target);
+
+        Object.entries(source).forEach(([key, value]) => {
+          if (value != null && value != "") {
+            settings[key] = value;
+          }
+        });
+
+        return settings;
+      }
+
+      function loadSettings() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomID = urlParams.get("roomId");
+        const storageKey = `${kickObsTTSSettings}-${roomID}`;
+
+        const localStorageSettings =
+          JSON.parse(localStorage.getItem(storageKey)) || {};
+
+        const urlSettings = {
+          roomID,
+          clusterID: urlParams.get("clusterID"),
+          version: urlParams.get("version"),
+          refreshToken: urlParams.get("refreshToken"),
+          ttsVoice: urlParams.get("ttsVoice"),
+          admins:
+            urlParams
+              .get("admins")
+              ?.split(",")
+              .map((admin) => admin.toLowerCase()) || [],
+          journey: urlParams.get("journey"),
+        };
+
+        const ttsSpeed = parseFloat(urlParams.get("ttsSpeed"));
+        const ttsVolume = parseFloat(urlParams.get("ttsVolume"));
+
+        if (!Number.isNaN(ttsSpeed)) {
+          urlSettings.ttsSpeed = ttsSpeed;
+        }
+
+        if (!Number.isNaN(ttsVolume)) {
+          urlSettings.ttsVolume = ttsVolume;
+        }
+
+        settings = applyOverrides(settings, urlSettings);
+        settings = applyOverrides(settings, localStorageSettings);
+      }
+
+      function saveSettings() {
+        const roomID = settings.roomID;
+        localStorage.setItem(
+          `${kickObsTTSSettings}-${roomID}`,
+          JSON.stringify(settings)
+        );
+
+        console.log("Settings saved to localStorage.");
+      }
+
+      function clearStoredSettings() {
+        const roomID = settings.roomID;
+        localStorage.setItem(
+          `${kickObsTTSSettings}-${roomID}`,
+          JSON.stringify(settings)
+        );
+
+        console.log("Stored settings cleared from localStorage.");
+      }
 
       function enqueMessage(text, { voice = defaultTtsVoice }) {
+        const { ttsQueue } = state;
         ttsQueue.push({ text, voice });
 
         if (ttsQueue.length == 1) {
@@ -44,9 +126,12 @@
       }
 
       async function fetchAndPlayTTS() {
+        const { ttsQueue } = state;
         if (ttsQueue.length == 0) {
           return;
         }
+
+        const { journey, ttsVolume, ttsSpeed } = settings;
 
         // peek at the first message in the queue
         const { voice, text } = ttsQueue[0];
@@ -55,10 +140,12 @@
           let ttsUrl;
 
           if ((voice === "Spanish" || voice === "French") && journey) {
-            ttsUrl = `https://${journey}.cloudfunctions.net/tts?text=${encodeURIComponent(text)}&lang=${voice}`;
+            ttsUrl = `https://${journey}.cloudfunctions.net/tts?text=${encodeURIComponent(
+              text
+            )}&lang=${voice}`;
           } else {
             ttsUrl = `https://api.streamelements.com/kappa/v2/speech?voice=${voice}&text=${encodeURIComponent(
-              text,
+              text
             )}`;
           }
 
@@ -67,23 +154,26 @@
           const audioBuffer = await response.arrayBuffer();
 
           const base64 = btoa(
-            String.fromCharCode(...new Uint8Array(audioBuffer)),
+            String.fromCharCode(...new Uint8Array(audioBuffer))
           );
 
-          const audioText = `data:audio/${voice === "French" || voice === "Spanish" ? "ogg" : "mp3"};base64,${base64}`;
+          const audioText = `data:audio/${
+            voice === "French" || voice === "Spanish" ? "ogg" : "mp3"
+          };base64,${base64}`;
 
-          currentAudio = new Howl({
+          const audio = new Howl({
             src: [audioText],
           });
 
-          currentAudio.volume(currentVolume);
-          currentAudio.rate(currentSpeed);
+          state.currentAudio = audio;
+          audio.volume(ttsVolume);
+          audio.rate(ttsSpeed);
 
-          currentAudio.on("end", function () {
+          audio.on("end", function () {
             // deque the first messages in the queue
             ttsQueue.shift();
 
-            currentAudio = null;
+            state.currentAudio = null;
 
             // yield back to the queue
             fetchAndPlayTTS();
@@ -92,22 +182,22 @@
           function audioError(id, error) {
             console.error("Error fetching TTS:", error);
             ttsQueue.shift();
-            currentAudio = null;
+            state.currentAudio = null;
             fetchAndPlayTTS();
           }
 
-          currentAudio.on("loaderror", audioError);
-          currentAudio.on("playerror", audioError);
+          audio.on("loaderror", audioError);
+          audio.on("playerror", audioError);
 
           // Play the audio
-          currentAudio.play();
+          audio.play();
         } catch (error) {
           console.error("Error fetching TTS:", error);
 
           // skip to next message
           ttsQueue.shift();
 
-          currentAudio = null;
+          state.currentAudio = null;
 
           fetchAndPlayTTS();
         }
@@ -133,19 +223,15 @@
         document.getElementById("video").innerHTML = "";
       }
 
-      function connectToChatroom(
-        roomId,
-        {
-          clusterID = defaultClusterID,
-          version = defaultVersion,
-          ttsVoice = defaultTtsVoice,
-          refreshToken = defaultRefreshToken,
-          admins = [],
-        },
-      ) {
-        ws = new WebSocket(
-          `wss://ws-us2.pusher.com/app/${clusterID}?protocol=7&client=js&version=${version}&flash=false`,
+      function connectToChatroom(settings, state) {
+        const { clusterID, version, roomID, admins, ttsVoice, refreshToken } =
+          settings;
+
+        state.ws = new WebSocket(
+          `wss://ws-us2.pusher.com/app/${clusterID}?protocol=7&client=js&version=${version}&flash=false`
         );
+
+        const { ws, ttsQueue } = state;
 
         ws.onopen = () => {
           console.log("Connected to WebSocket");
@@ -184,14 +270,10 @@
               }
 
               if (isAdmin && chatMessage.content == "!skip") {
-                // pause audio
-                currentAudio.pause();
+                const { currentAudio } = state;
 
-                // Set current time to end
-                currentAudio.currentTime = currentAudio.duration;
-
-                // trigger ended
-                currentAudio.dispatchEvent(new Event("ended"));
+                // this is how you trigger the audio to end and not just stop
+                currentAudio.seek(currentAudio.duration());
 
                 return;
               }
@@ -223,12 +305,12 @@
                 const volVal = Number(parseFloat(chatMessage.content.slice(3)));
 
                 if (!Number.isNaN(volVal) && volVal >= 0 && volVal <= 1) {
-                  currentVolume = volVal;
+                  settings.ttsVolume = volVal;
                 }
               }
 
               // streamable
-              if (isAdmin && chatMessage.content.startsWith("!st")) {
+              if (isAdmin && chatMessage.content.startsWith("!st ")) {
                 if (chatMessage.content.slice(4) == "clear") {
                   clearVideos();
                   return;
@@ -251,7 +333,7 @@
               }
 
               // youtube
-              if (isAdmin && chatMessage.content.startsWith("!yt")) {
+              if (isAdmin && chatMessage.content.startsWith("!yt ")) {
                 // clear all videos
                 if (chatMessage.content.slice(4) == "clear") {
                   clearVideos();
@@ -287,7 +369,7 @@
                   if (key === "removeadmin") {
                     const i = admins.indexOf(user);
 
-                    if (i >= 0) {
+                    if (i >= 0 && user !== "cheesypotatoe") {
                       admins.splice(i, 1);
                     }
                   } else {
@@ -295,53 +377,38 @@
 
                     admins.push(user);
                   }
-
-                  document.dispatchEvent(
-                    new CustomEvent("reconnect-chat", {
-                      detail: {
-                        roomID,
-                        clusterID,
-                        ttsVoice,
-                        refreshToken,
-                        admins,
-                        journey,
-                      },
-                    }),
-                  );
                 } else {
                   const [key, value] = tokens;
 
-                  // dispatch reconnect-chat event
-                  document.dispatchEvent(
-                    new CustomEvent("reconnect-chat", {
-                      detail: {
-                        roomID,
-                        clusterID,
-                        ttsVoice,
-                        refreshToken,
-                        admins,
-                        journey,
-                        // replace option
-                        [key]: value,
-                      },
-                    }),
-                  );
+                  if (state.hasOwnProperty(key)) {
+                    state[key] = value;
+                  }
                 }
+
+                ws.close();
               }
 
               if (isAdmin && chatMessage.content.startsWith("!speed ")) {
                 const sp = parseFloat(chatMessage.content.slice(7));
 
                 if (!Number.isNaN(sp)) {
-                  currentSpeed = sp;
+                  settings.ttsSpeed = sp;
                 }
+              }
+
+              if (isAdmin && chatMessage.content === "!save") {
+                saveSettings();
+              }
+
+              if (isAdmin && chatMessage.content === "!clear") {
+                clearStoredSettings();
               }
             }
 
             if (message.event === "pusher:error") {
               console.error(
                 "Received Error Message: ",
-                JSON.parse(message.data),
+                JSON.parse(message.data)
               );
             }
           } catch (error) {
@@ -358,49 +425,18 @@
 
           console.log("Reconnecting...");
 
-          connect();
+          setTimeout(connect, 1000 * 2);
         };
       }
 
-      // reconnect event handler
-
-      document.addEventListener("reconnect-chat", ({ detail }) => {
-        clusterID = detail.clusterID;
-        ttsVoice = detail.ttsVoice;
-        refreshToken = detail.refreshToken;
-        journey = detail.journey;
-
-        ws.close();
-      });
-
       // Get parameters from URL (roomId, clusterID, version)
-      urlParams = new URLSearchParams(window.location.search);
-      roomID = urlParams.get("roomId");
-      clusterID = urlParams.get("clusterID") ?? defaultClusterID;
-      version = urlParams.get("version") ?? defaultVersion;
-      refreshToken = urlParams.get("refreshToken") ?? defaultRefreshToken;
-      ttsVoice = urlParams.get("ttsVoice") ?? defaultTtsVoice;
-      journey = urlParams.get("journey");
-
-      currentSpeed = parseFloat(urlParams.get("ttsSpeed") ?? 1.0);
-
-      const admins =
-        urlParams
-          .get("admins")
-          ?.split(",")
-          .map((admin) => admin.toLowerCase()) ?? [];
+      loadSettings();
 
       function connect() {
-        connectToChatroom(roomID, {
-          clusterID,
-          version,
-          refreshToken,
-          ttsVoice,
-          admins,
-        });
+        connectToChatroom(settings, state);
       }
 
-      if (!roomID) {
+      if (!settings.roomID) {
         console.error("Missing room Id");
       } else {
         connect();
