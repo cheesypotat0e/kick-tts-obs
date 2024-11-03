@@ -14,6 +14,7 @@
   <body>
     <div id="video"></div>
     <script>
+      const COMMIT = "";
       const kickObsTTSSettings = "kick-obs-tts-settings";
 
       const defaultClusterID = "32cbd69e4b950bf97679";
@@ -412,6 +413,10 @@
                 if (voice) {
                   settings.ttsVoice = voice;
                 }
+              }
+
+              if (isAdmin && chatMessage.content == "!commit") {
+                enqueMessage(COMMIT, { voice: defaultTtsVoice });
               }
             }
 
