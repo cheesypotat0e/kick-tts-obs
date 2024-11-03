@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -100,7 +100,7 @@
         const roomID = settings.roomID;
         localStorage.setItem(
           `${kickObsTTSSettings}-${roomID}`,
-          JSON.stringify(settings)
+          JSON.stringify(settings),
         );
 
         console.log("Settings saved to localStorage.");
@@ -110,7 +110,7 @@
         const roomID = settings.roomID;
         localStorage.setItem(
           `${kickObsTTSSettings}-${roomID}`,
-          JSON.stringify(settings)
+          JSON.stringify(settings),
         );
 
         console.log("Stored settings cleared from localStorage.");
@@ -141,11 +141,11 @@
 
           if ((voice === "Spanish" || voice === "French") && journey) {
             ttsUrl = `https://${journey}.cloudfunctions.net/tts?text=${encodeURIComponent(
-              text
+              text,
             )}&lang=${voice}`;
           } else {
             ttsUrl = `https://api.streamelements.com/kappa/v2/speech?voice=${voice}&text=${encodeURIComponent(
-              text
+              text,
             )}`;
           }
 
@@ -154,7 +154,7 @@
           const audioBuffer = await response.arrayBuffer();
 
           const base64 = btoa(
-            String.fromCharCode(...new Uint8Array(audioBuffer))
+            String.fromCharCode(...new Uint8Array(audioBuffer)),
           );
 
           const audioText = `data:audio/${
@@ -228,7 +228,7 @@
           settings;
 
         state.ws = new WebSocket(
-          `wss://ws-us2.pusher.com/app/${clusterID}?protocol=7&client=js&version=${version}&flash=false`
+          `wss://ws-us2.pusher.com/app/${clusterID}?protocol=7&client=js&version=${version}&flash=false`,
         );
 
         const { ws, ttsQueue } = state;
@@ -382,6 +382,8 @@
 
                   if (state.hasOwnProperty(key)) {
                     state[key] = value;
+                  } else if (settings.hasOwnProperty(key)) {
+                    settings[key] = value;
                   }
                 }
 
@@ -416,7 +418,7 @@
             if (message.event === "pusher:error") {
               console.error(
                 "Received Error Message: ",
-                JSON.parse(message.data)
+                JSON.parse(message.data),
               );
             }
           } catch (error) {
