@@ -14,6 +14,14 @@
   <body>
     <div id="video"></div>
     <script>
+      const bits = {
+        follow: "https://www.myinstants.com/media/sounds/short_sms_wcluqam.mp3",
+        fart: "https://www.myinstants.com/media/sounds/dry-fart.mp3",
+        pluh: "https://www.myinstants.com/media/sounds/pluh.mp3",
+        boom: "https://www.myinstants.com/media/sounds/vine-boom.mp3",
+        discord:
+          "https://www.myinstants.com/media/sounds/discord-notification.mp3",
+      };
       const COMMIT = "";
       const kickObsTTSSettings = "kick-obs-tts-settings";
 
@@ -140,7 +148,9 @@
         try {
           let ttsUrl;
 
-          if ((voice === "Spanish" || voice === "French") && journey) {
+          if (text == "#bit") {
+            ttsUrl = voice;
+          } else if ((voice === "Spanish" || voice === "French") && journey) {
             ttsUrl = `https://${journey}.cloudfunctions.net/tts?text=${encodeURIComponent(
               text,
             )}&lang=${voice}`;
@@ -150,21 +160,32 @@
             )}`;
           }
 
-          // Fetch the audio response from the API
-          const response = await fetch(ttsUrl);
-          const audioBuffer = await response.arrayBuffer();
+          let audio;
 
-          const base64 = btoa(
-            String.fromCharCode(...new Uint8Array(audioBuffer)),
-          );
+          if (text === "#bit") {
+            // NB: if we pass the audio url directly to the audio element
+            // we don't have to worry about CORS
+            audio = new Howl({
+              src: [ttsUrl],
+              html5: text === "#bit",
+            });
+          } else {
+            // Fetch the audio response from the API
+            const response = await fetch(ttsUrl);
+            const audioBuffer = await response.arrayBuffer();
 
-          const audioText = `data:audio/${
-            voice === "French" || voice === "Spanish" ? "ogg" : "mp3"
-          };base64,${base64}`;
+            const base64 = btoa(
+              String.fromCharCode(...new Uint8Array(audioBuffer)),
+            );
 
-          const audio = new Howl({
-            src: [audioText],
-          });
+            const audioText = `data:audio/${
+              voice === "French" || voice === "Spanish" ? "ogg" : "mp3"
+            };base64,${base64}`;
+
+            audio = new Howl({
+              src: [audioText],
+            });
+          }
 
           state.currentAudio = audio;
           audio.volume(ttsVolume);
@@ -415,8 +436,12 @@
                 }
               }
 
-              if (isAdmin && chatMessage.content == "!commit") {
-                enqueMessage(COMMIT, { voice: defaultTtsVoice });
+              if (isAdmin && chatMessage.content.startsWith("!bit ")) {
+                const names = chatMessage.content.slice(5).split(" ");
+
+                if (names.length) {
+                  enqueMessage("#bit", { voice: names[0] });
+                }
               }
             }
 
