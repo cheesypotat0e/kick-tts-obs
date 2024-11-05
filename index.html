@@ -14,14 +14,6 @@
   <body>
     <div id="video"></div>
     <script>
-      const bits = {
-        follow: "https://www.myinstants.com/media/sounds/short_sms_wcluqam.mp3",
-        fart: "https://www.myinstants.com/media/sounds/dry-fart.mp3",
-        pluh: "https://www.myinstants.com/media/sounds/pluh.mp3",
-        boom: "https://www.myinstants.com/media/sounds/vine-boom.mp3",
-        discord:
-          "https://www.myinstants.com/media/sounds/discord-notification.mp3",
-      };
       const COMMIT = "";
       const kickObsTTSSettings = "kick-obs-tts-settings";
 
@@ -48,6 +40,16 @@
         journey: undefined,
 
         admins: [],
+
+        bits: {
+          follow:
+            "https://www.myinstants.com/media/sounds/short_sms_wcluqam.mp3",
+          fart: "https://www.myinstants.com/media/sounds/dry-fart.mp3",
+          pluh: "https://www.myinstants.com/media/sounds/pluh.mp3",
+          boom: "https://www.myinstants.com/media/sounds/vine-boom.mp3",
+          discord:
+            "https://www.myinstants.com/media/sounds/discord-notification.mp3",
+        },
       };
 
       let state = {
@@ -88,10 +90,15 @@
               ?.split(",")
               .map((admin) => admin.toLowerCase()) || [],
           journey: urlParams.get("journey"),
+          bits: urlParams.get("bits"),
         };
 
         const ttsSpeed = parseFloat(urlParams.get("ttsSpeed"));
         const ttsVolume = parseFloat(urlParams.get("ttsVolume"));
+
+        const bits = urlParams.get("bits")
+          ? JSON.parse(decodeURIComponent(urlParams.get("bits")))
+          : "";
 
         if (!Number.isNaN(ttsSpeed)) {
           urlSettings.ttsSpeed = ttsSpeed;
@@ -168,6 +175,7 @@
             audio = new Howl({
               src: [ttsUrl],
               html5: text === "#bit",
+              format: "mp3",
             });
           } else {
             // Fetch the audio response from the API
@@ -246,8 +254,15 @@
       }
 
       function connectToChatroom(settings, state) {
-        const { clusterID, version, roomID, admins, ttsVoice, refreshToken } =
-          settings;
+        const {
+          clusterID,
+          version,
+          roomID,
+          admins,
+          ttsVoice,
+          refreshToken,
+          bits,
+        } = settings;
 
         state.ws = new WebSocket(
           `wss://ws-us2.pusher.com/app/${clusterID}?protocol=7&client=js&version=${version}&flash=false`,
@@ -402,9 +417,12 @@
                 } else {
                   const [key, value] = tokens;
 
-                  if (state.hasOwnProperty(key)) {
+                  if (state.hasOwnProperty(key) && typeof state[key]) {
                     state[key] = value;
-                  } else if (settings.hasOwnProperty(key)) {
+                  } else if (
+                    settings.hasOwnProperty(key) &&
+                    typeof settings[key]
+                  ) {
                     settings[key] = value;
                   }
                 }
@@ -440,8 +458,23 @@
                 const names = chatMessage.content.slice(5).split(" ");
 
                 if (names.length) {
-                  enqueMessage("#bit", { voice: names[0] });
+                  if (bits.hasOwnProperty(names[0])) {
+                    enqueMessage("#bit", { voice: bits[names[0]] });
+                  }
                 }
+              }
+
+              if (isAdmin && chatMessage.content.startsWith("!addbit ")) {
+                const tokens = chatMessage.content.slice(8).split(" ");
+
+                if (tokens.length > 1) {
+                  const [name, url] = tokens;
+                  bits[name] = url;
+                }
+              }
+
+              if (isAdmin && chatMessage.content === "!settings") {
+                console.log(settings);
               }
             }
 
