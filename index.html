@@ -458,9 +458,11 @@
                 const names = chatMessage.content.slice(5).split(" ");
 
                 if (names.length) {
-                  if (bits.hasOwnProperty(names[0])) {
-                    enqueMessage("#bit", { voice: bits[names[0]] });
-                  }
+                  names.forEach((name) => {
+                    if (bits.hasOwnProperty(name)) {
+                      enqueMessage("#bit", { voice: bits[name] });
+                    }
+                  });
                 }
               }
 
