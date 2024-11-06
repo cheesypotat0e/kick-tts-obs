@@ -188,9 +188,14 @@
             const response = await fetch(ttsUrl);
             const audioBuffer = await response.arrayBuffer();
 
-            const base64 = btoa(
-              String.fromCharCode(...new Uint8Array(audioBuffer)),
-            );
+            let binary = "";
+            const bytes = new Uint8Array(audioBuffer);
+
+            for (let i = 0; i < bytes.length; i++) {
+              binary += String.fromCharCode(bytes[i]);
+            }
+
+            const base64 = btoa(binary);
 
             const audioText = `data:audio/${
               voice === "French" || voice === "Spanish" ? "ogg" : "mp3"
