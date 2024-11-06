@@ -157,7 +157,10 @@
 
           if (text == "#bit") {
             ttsUrl = voice;
-          } else if ((voice === "Spanish" || voice === "French") && journey) {
+          } else if (
+            (voice === "Spanish" || voice === "French" || voice == "Trump") &&
+            journey
+          ) {
             ttsUrl = `https://${journey}.cloudfunctions.net/tts?text=${encodeURIComponent(
               text,
             )}&lang=${voice}`;
