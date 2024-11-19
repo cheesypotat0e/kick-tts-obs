@@ -1,10 +1,5 @@
 import { Messenger } from "./messenger";
-
-type KickMessengerSettings = {
-  clusterID: string;
-  version: string;
-  roomID: string;
-};
+import { SettingsStore } from "./settings";
 
 type KickEvent = {
   event: string;
@@ -31,67 +26,81 @@ type KickEvent = {
 };
 
 export class KickMessenger extends Messenger {
-  settings: KickMessengerSettings;
   static ChatMessageEvent = "App\\Events\\ChatMessageEvent";
 
-  constructor(settings: KickMessengerSettings) {
-    super();
-    this.settings = settings;
-
-    this.onmessage = this.onKickMessage;
+  constructor(protected settings: SettingsStore) {
+    super(settings);
   }
 
-  public async connect() {
+  public async start(roomID: string) {
     const url = this.getURL();
 
-    await super.connect(url, { timeout: 2000 });
+    this.addEventListener("onmessage", this.onKickMessage);
+
+    await this.connect(url);
+
+    this.addEventListener("onclose", this.onKickClose);
+
+    const subscribeMessage = {
+      event: "pusher:subscribe",
+      data: {
+        channel: `chatrooms.${roomID}.v2`,
+        auth: "",
+      },
+    };
+
+    try {
+      this.send(JSON.stringify(subscribeMessage));
+    } catch (error) {
+      console.error("error sending message: ", error);
+    }
   }
 
   onKickMessage = (event: any) => {
     try {
-      const eventData = JSON.parse(event.data) as KickEvent;
+      const eventData = JSON.parse(event.data);
 
-      if (eventData.event == KickMessenger.ChatMessageEvent) {
-        const message = eventData.data.content;
-        const senderUsername = eventData.data.sender.slug;
+      const data = eventData as KickEvent;
+
+      if (data.event == KickMessenger.ChatMessageEvent) {
+        eventData.data = JSON.parse(eventData.data);
+        const message = data.data.content;
+        const senderUsername = data.data.sender.slug;
 
         // parse the message
 
-        const commands = this.parse(message);
+        const tokens = this.parse(message);
 
-        super.pushToQueue({
+        this.pushToQueue({
           text: message,
           username: senderUsername,
-          commands,
+          tokens,
         });
+      } else if (data.event === "pusher:error") {
+        const errorMessage = (data.data as any).message;
+        throw new Error(errorMessage);
       }
     } catch (error) {
       console.error(error);
     }
   };
 
+  onKickClose = async () =>
+    setTimeout(() => {
+      this.start(this.settings.get("roomID"));
+    }, 2000);
+
   public parse(message: string) {
+    // parse into tokens
+
     message.trim();
-    const tokens = message.split(" ");
 
-    const groups: string[][] = [];
-
-    let cmd: string | undefined;
-
-    for (const token of tokens) {
-      if (token.startsWith("!")) {
-        groups.push([]);
-      } else if (cmd) {
-        const len = groups.length - 1;
-        groups[len].push(token);
-      }
-    }
-
-    return groups;
+    return message.split(" ").filter((token) => token.length);
   }
 
   private getURL() {
-    const { clusterID, version } = this.settings;
+    const clusterID = this.settings.get("clusterID");
+    const version = this.settings.get("version");
 
     return `wss://ws-us2.pusher.com/app/${clusterID}?protocol=7&client=js&version=${version}&flash=false`;
   }

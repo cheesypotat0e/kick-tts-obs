@@ -1,4 +1,10 @@
-export const neetsVoices = {
+export type NeetsVoice = {
+  voiceName: string;
+  model: string;
+  platform: "neets";
+};
+
+export const neetsVoices: Record<string, NeetsVoice> = {
   "50-cent": { voiceName: "50-cent", model: "ar-diff-50k", platform: "neets" },
   jones: {
     voiceName: "alex-jones",

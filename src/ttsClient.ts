@@ -2,231 +2,118 @@ import { gcloudVoices } from "./gcloud-voices.js";
 import { neetsVoices } from "./neets-voices.js";
 import { Holler } from "./holler.js";
 import { Messenger } from "./messenger.js";
-import { AsyncQueue } from "./async-queue.js";
-import { KickMessenger } from "./kick-messenger.js";
+import { AsyncQueue, QueueEntry } from "./async-queue.js";
+import { SettingsStore } from "./settings.js";
 
-type TTSSettings = {
-  roomID?: string;
-
-  clusterID: string;
-
-  version: string;
-
-  refreshToken: string;
-
-  ttsVoice: string;
-
-  ttsSpeed: number; // between 0.0 and 4.0
-
-  ttsVolume: number; // between 0.0 and 1.0
-
-  journeyProjectName?: string;
-
-  journeyFunctionName?: string;
-
-  admins: string[];
-
-  bits: Record<string, string>;
-
-  voices: Record<string, TTSVoice>;
-};
-
-type TTSVoice = {
-  voiceName: string;
-  code?: string;
-  model?: string;
-  platform: string;
-};
+// type TTSVoice = {
+//   voiceName: string;
+//   code?: string;
+//   model?: string;
+//   platform: string;
+// };
 
 type TTSState = {
   ms?: Messenger;
   ttsQueue: AsyncQueue<TTSEntry>;
   audio?: Holler;
-  sendQueue: AsyncQueue<string>;
-  processingSendQueue: boolean;
+  // sendQueue: AsyncQueue<string>;
   processingTTSQueue: boolean;
-  gcloudFetch?: GCloudFetch;
 };
 
 export type TTSEntry = {
   text: string;
   options: {
-    voice: string;
-    volume: number;
-    rate: number;
+    voice: {
+      id?: string;
+      volume?: number;
+      rate?: number;
+    };
     format?: string;
   };
-};
+} & QueueEntry;
 
-const kickObsTTSSettings = "kick-obs-tts-settings";
+// const kickObsTTSSettings = "kick-obs-tts-settings";
 
 export class TTSClient {
-  static defaultTTSSettings: TTSSettings = {
-    roomID: undefined,
-
-    clusterID: "32cbd69e4b950bf97679",
-
-    version: "8.4.0-rc2",
-
-    refreshToken: "refreshTTS",
-
-    ttsVoice: "Brian",
-
-    ttsSpeed: 1.0,
-
-    ttsVolume: 1.0,
-
-    journeyFunctionName: "",
-
-    journeyProjectName: "",
-
-    admins: [],
-
-    bits: {
-      follow: "https://www.myinstants.com/media/sounds/short_sms_wcluqam.mp3",
-      fart: "https://www.myinstants.com/media/sounds/dry-fart.mp3",
-      pluh: "https://www.myinstants.com/media/sounds/pluh.mp3",
-      boom: "https://www.myinstants.com/media/sounds/vine-boom.mp3",
-      discord:
-        "https://www.myinstants.com/media/sounds/discord-notification.mp3",
-    },
-
-    voices: { ...gcloudVoices, ...neetsVoices },
-  };
-
-  settings: TTSSettings;
   state: TTSState = {
     ms: undefined,
-    ttsQueue: new AsyncQueue(),
+    ttsQueue: new AsyncQueue<TTSEntry>(),
     audio: undefined,
-    sendQueue: new AsyncQueue(),
-    processingSendQueue: false,
+    // sendQueue: new AsyncQueue(),
     processingTTSQueue: false,
-    gcloudFetch: undefined,
   };
 
-  constructor(
-    settings: Partial<TTSSettings> & Required<Pick<TTSSettings, "roomID">>
-  ) {
-    this.settings = {
-      ...TTSClient.defaultTTSSettings,
-      ...settings,
-    };
+  constructor(private settings: SettingsStore, private holler: Holler) {}
 
-    if (this.settings.journeyFunctionName && this.settings.journeyProjectName) {
-      this.state.gcloudFetch = new GCloudFetch(
-        this.settings.journeyProjectName,
-        this.settings.journeyFunctionName
-      );
-    }
-  }
-
-  public async start() {
-    this.startProcessQueue();
-    this.startTTSQueue();
-    // await this.connectToChat();
-
-    // if (this.state.ms) {
-    //   for await (const message of this.state.ms) {
-    //     for (const [cmd, ...args] of message.commands) {
-    //       if (cmd === "s") {
-    //         this.enqueTTSQueue({
-    //           text: args.slice(1).join(" "),
-    //           options: {
-    //             rate: this.settings.ttsSpeed,
-    //             voice: this.settings.ttsVoice,
-    //             volume: this.settings.ttsVolume,
-    //           },
-    //         });
-    //       } else if (cmd === "bit") {
-    //       }
-    //     }
-    //   }
-    // }
-  }
-
-  public destroy() {
-    this.stopProcessQueue();
-  }
-
-  private async connectToChat() {
-    const { roomID, clusterID, version } = this.settings;
-
-    if (!roomID) {
-      console.error("missing roomID");
-      return;
-    }
-
-    if (this.state.ms) {
-      await this.state.ms.close();
-    }
-
-    this.state.ms = new KickMessenger({ clusterID, version, roomID });
-
-    await this.state.ms.connect(this.settings.clusterID, this.settings.version);
-
-    const subscribeMessage = {
-      event: "pusher:subscribe",
-      data: {
-        channel: `chatrooms.${roomID}.v2`,
-        auth: "",
-      },
-    };
-
-    this.send(JSON.stringify(subscribeMessage));
-  }
-
-  private enqueTTSQueue(message: TTSEntry) {
+  public enqueTTSQueue(message: TTSEntry) {
     this.state.ttsQueue.enqueue(message);
   }
 
-  private async startTTSQueue() {
+  public async startTTSQueue() {
+    console.debug("starting tts queue...");
     for await (const message of this.state.ttsQueue) {
-      const {
-        options: { rate, voice, volume, format },
+      let {
+        options: { voice },
         text,
+        messageIndex,
+        segmentIndex,
       } = message;
 
-      let ttsMessage: TTSMessage;
+      voice.id ??= this.settings.get("ttsVoice");
+      voice.rate ??= this.settings.get("ttsSpeed");
+      voice.volume ??= this.settings.get("ttsVolume");
 
-      if (
-        this.state.gcloudFetch &&
-        (voice in neetsVoices || voice in gcloudVoices)
-      ) {
-        ttsMessage = new GCloudTTSMessage(text, voice, this.state.gcloudFetch);
+      let ttsMessage: TTSMessage | undefined = undefined;
+
+      if (this.isGoogleVoice(voice.id)) {
+        if (this.isGoogleEnabled()) {
+          const id = voice.id.toLowerCase();
+
+          const gcloudVoice = gcloudVoices[id] ?? neetsVoices[id];
+
+          ttsMessage = new GCloudTTSMessage(
+            text,
+            gcloudVoice.voiceName,
+            gcloudVoice.code,
+            gcloudVoice.platform,
+            new GCloudFetch(
+              this.settings.get("journeyProjectName"),
+              this.settings.get("journeyFunctionName")
+            )
+          );
+        }
       } else {
-        ttsMessage = new StreamElementsTTSMessage(text, voice);
+        ttsMessage = new StreamElementsTTSMessage(text, voice.id);
       }
 
-      const data = await ttsMessage.generate();
+      if (ttsMessage) {
+        try {
+          const data = Promise.resolve(ttsMessage.generate());
 
-      const holler = new Holler(data, { volume, rate, format });
+          const { rate, volume } = voice;
 
-      try {
-        await holler.play();
-      } catch (error) {
-        console.error("Error processing tts message: ", error);
+          this.holler.enqueue({
+            data,
+            options: { rate, volume },
+            messageIndex,
+            segmentIndex,
+          });
+        } catch (error) {
+          console.error("Error playing tts message ", error);
+        }
       }
     }
   }
 
-  private skip() {
-    this.state.audio?.skip();
+  private isGoogleEnabled() {
+    return (
+      this.settings.get("journeyFunctionName") &&
+      this.settings.get("journeyProjectName")
+    );
   }
 
-  private send(message: string) {
-    console.debug(`Queueing message to the send queue: ${message}`);
-    this.state.sendQueue.enqueue(message);
-  }
-
-  private async startProcessQueue() {
-    for await (const message of this.state.sendQueue) {
-      await this.state.ms?.send(message);
-    }
-  }
-
-  private stopProcessQueue() {
-    this.state.sendQueue.close();
+  private isGoogleVoice(voice: string) {
+    return this.settings.get("voices").has(voice);
   }
 }
 
@@ -247,11 +134,22 @@ class StreamElementsTTSMessage implements TTSMessage {
   }
 
   public getVoice(): string {
-    return this.voice;
+    if (!this.voice) {
+      return "";
+    }
+
+    return this.voice.charAt(0).toUpperCase() + this.voice.slice(1);
   }
 
   public async generate() {
     const response = await fetch(this.getURL());
+
+    if (!response.ok) {
+      const errorBody = await response.json();
+      const errorMessage = errorBody["message"];
+
+      throw new Error("Error requesting TTS voice " + errorMessage);
+    }
 
     const audioBuffer = await response.arrayBuffer();
 
@@ -259,10 +157,12 @@ class StreamElementsTTSMessage implements TTSMessage {
   }
 
   private getURL() {
-    return (
-      StreamElementsTTSMessage.STREAMELEMENTS_URL +
-      `?voice=${this.voice}&text=${encodeURIComponent(this.text)}`
-    );
+    const url = new URL(StreamElementsTTSMessage.STREAMELEMENTS_URL);
+
+    url.searchParams.set("voice", this.getVoice());
+    url.searchParams.set("text", this.getText());
+
+    return url.toString();
   }
 }
 
@@ -270,13 +170,29 @@ class GCloudTTSMessage implements TTSMessage {
   constructor(
     private text: string,
     private voice: string,
+    private code: string,
+    private platform: "gcloud" | "neets",
     private fetch: GCloudFetch
   ) {}
 
   public async generate(): Promise<string> {
-    const response = await this.fetch.get(
-      `?lang=${this.voice}&text=${encodeURIComponent(this.text)}`
-    );
+    const params = new URLSearchParams({
+      lang: this.voice,
+      lang_code: this.code,
+      platform: this.platform,
+      text: this.text,
+      v2: "true",
+    });
+
+    const response = await this.fetch.get(params.toString());
+
+    if (!response.ok) {
+      const json = await response.json();
+
+      throw new Error(
+        `Error requesting Google cloud TTS: ${JSON.stringify(json)}`
+      );
+    }
 
     const audioBuffer = await response.arrayBuffer();
 
@@ -295,21 +211,13 @@ class GCloudTTSMessage implements TTSMessage {
 class GCloudFetch {
   constructor(private projectName: string, private functionName: string) {}
 
-  public setFunctionName(functionName: string) {
-    this.functionName = functionName;
-  }
-
-  public setFunctionProj(projectName: string) {
-    this.projectName = projectName;
-  }
-
   public async get(params: string) {
     if (!params.startsWith("?")) {
       params = "?" + params;
     }
 
     return fetch(
-      `https://${this.projectName}.cloudfunctions.net/${this.functionName}?${params}`
+      `https://${this.projectName}.cloudfunctions.net/${this.functionName}${params}`
     );
   }
 }

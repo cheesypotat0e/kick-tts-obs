@@ -1,5 +1,11 @@
+export type GCloudVoice = {
+  voiceName: string;
+  code: string;
+  platform: "gcloud";
+};
+
 // TODO: create a job that automates populating this
-export const gcloudVoices = {
+export const gcloudVoices: Record<string, GCloudVoice> = {
   arabic: {
     voiceName: "ar-XA-Wavenet-B",
     code: "ar-XA",
@@ -51,42 +57,42 @@ export const gcloudVoices = {
     platform: "gcloud",
   },
   english: {
-    voiceName: "en-US-Neural2-J",
+    voiceName: "en-US-Journey-D",
     code: "en-US",
     platform: "gcloud",
   },
   "english-female": {
-    voiceName: "en-US-Neural2-I",
+    voiceName: "en-US-Journey-F",
     code: "en-US",
     platform: "gcloud",
   },
   "english-australia": {
-    voiceName: "en-AU-Neural2-D",
+    voiceName: "en-AU-Journey-D",
     code: "en-AU",
     platform: "gcloud",
   },
   "english-australia-female": {
-    voiceName: "en-AU-Neural2-C",
+    voiceName: "en-AU-Journey-F",
     code: "en-AU",
     platform: "gcloud",
   },
-  "english-india": {
-    voiceName: "en-IN-Wavenet-D",
+  indian: {
+    voiceName: "en-IN-Journey-D",
     code: "en-IN",
     platform: "gcloud",
   },
-  "english-india-female": {
-    voiceName: "en-IN-Wavenet-C",
+  "indian-female": {
+    voiceName: "en-IN-Journey-F",
     code: "en-IN",
     platform: "gcloud",
   },
-  "english-united-kingdom": {
-    voiceName: "en-GB-Neural2-B",
+  british: {
+    voiceName: "en-GB-Journey-D",
     code: "en-GB",
     platform: "gcloud",
   },
-  "english-united-kingdom-female": {
-    voiceName: "en-GB-Neural2-A",
+  "british-female": {
+    voiceName: "en-GB-Journey-F",
     code: "en-GB",
     platform: "gcloud",
   },
@@ -110,33 +116,33 @@ export const gcloudVoices = {
     code: "fi-FI",
     platform: "gcloud",
   },
+  "french-fr": {
+    voiceName: "fr-FR-Journey-D",
+    code: "fr-FR",
+    platform: "gcloud",
+  },
+  "french-fr-female": {
+    voiceName: "fr-FR-Journey-F",
+    code: "fr-FR",
+    platform: "gcloud",
+  },
   french: {
-    voiceName: "fr-FR-Neural2-D",
-    code: "fr-FR",
-    platform: "gcloud",
-  },
-  "french-female": {
-    voiceName: "fr-FR-Neural2-C",
-    code: "fr-FR",
-    platform: "gcloud",
-  },
-  "french-canada": {
-    voiceName: "fr-CA-Wavenet-B",
+    voiceName: "fr-CA-Journey-D",
     code: "fr-CA",
     platform: "gcloud",
   },
-  "french-canada-female": {
+  "french-female": {
     voiceName: "fr-CA-Wavenet-A",
     code: "fr-CA",
     platform: "gcloud",
   },
   german: {
-    voiceName: "de-DE-Neural2-F",
+    voiceName: "de-DE-Journey-D",
     code: "de-DE",
     platform: "gcloud",
   },
   "german-female": {
-    voiceName: "de-DE-Neural2-A",
+    voiceName: "de-DE-Journey-F",
     code: "de-DE",
     platform: "gcloud",
   },
@@ -191,12 +197,12 @@ export const gcloudVoices = {
     platform: "gcloud",
   },
   italian: {
-    voiceName: "it-IT-Neural2-A",
+    voiceName: "it-IT-Journey-D",
     code: "it-IT",
     platform: "gcloud",
   },
   "italian-female": {
-    voiceName: "it-IT-Neural2-C",
+    voiceName: "it-IT-Journey-F",
     code: "it-IT",
     platform: "gcloud",
   },
@@ -330,23 +336,23 @@ export const gcloudVoices = {
     code: "sk-SK",
     platform: "gcloud",
   },
+  "spanish-spain": {
+    voiceName: "es-ES-Journey-D",
+    code: "es-ES",
+    platform: "gcloud",
+  },
+  "spanish-spain-female": {
+    voiceName: "es-ES-Journey-F",
+    code: "es-ES",
+    platform: "gcloud",
+  },
   spanish: {
-    voiceName: "es-ES-Neural2-B",
-    code: "es-ES",
-    platform: "gcloud",
-  },
-  "spanish-female": {
-    voiceName: "es-ES-Neural2-A",
-    code: "es-ES",
-    platform: "gcloud",
-  },
-  "spanish-latin-america": {
-    voiceName: "es-US-Neural2-B",
+    voiceName: "es-US-Journey-D",
     code: "es-US",
     platform: "gcloud",
   },
-  "spanish-latin-america-female": {
-    voiceName: "es-US-Neural2-A",
+  "spanish-female": {
+    voiceName: "es-US-Journey-F",
     code: "es-US",
     platform: "gcloud",
   },

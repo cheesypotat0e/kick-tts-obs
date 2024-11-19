@@ -1,81 +1,64 @@
 import { AsyncQueue } from "./async-queue";
-import { wait, withTimeout } from "./utils";
+import { SettingsStore } from "./settings";
+import { wait, withRetry, withTimeout } from "./utils";
 
 export type Message = {
   text: string;
   username: string;
-  commands: string[][];
+  tokens: string[];
 };
 
 export class Messenger {
   ws?: WebSocket;
-  clusterID?: string;
-  version?: string;
-  queue: AsyncQueue<Message>;
+  queue: AsyncQueue<Message> = new AsyncQueue();
   isProcessing: boolean = false;
   url: string = "";
-  timeout: number = 2000;
 
-  settings: Record<string, any>;
+  eventListeners: {
+    onerror: ((event: any) => void)[];
+    onmessage: ((event: any) => void)[];
+    onclose: ((event: any) => void)[];
+  } = {
+    onclose: [],
+    onmessage: [],
+    onerror: [],
+  };
 
-  constructor(settings: Record<string, any> = {}) {
-    this.queue = new AsyncQueue();
-    this.settings = settings;
+  constructor(protected settings: SettingsStore) {}
+
+  public async connect(url: string) {
+    let u = new URL(url);
+
+    u.searchParams.set("clusterID", this.settings.get("clusterID"));
+    u.searchParams.set("version", this.settings.get("version"));
+
+    const timeout = this.settings.get("timeout");
+    await this.wsConnect(url, { timeout });
   }
 
-  public async connect(url: string, settings: { timeout: number }) {
+  public async wsConnect(url: string, settings: { timeout: number }) {
     const { timeout } = settings;
 
     const connectTimeout = withTimeout<void>(async () => {
       this.ws = new WebSocket(url);
 
-      while (this.ws.readyState === this.ws.CONNECTING) {
-        await wait(50);
+      this.ws.onerror = this.onerror;
+      this.ws.onmessage = this.onmessage;
+
+      while (this.ws.readyState !== this.ws.OPEN) {
+        await wait(500);
       }
     }, timeout);
 
-    try {
-      await connectTimeout();
+    const connectRetry = withRetry<void>(connectTimeout, 2000, -1);
 
-      this.url = url;
-      this.timeout = timeout;
+    await connectRetry();
 
-      console.debug("Connected to WebSocket");
-    } catch (error) {
-      console.error("Error connecting: ", error);
-    }
+    this.url = url;
+    console.debug("Connected to WebSocket");
+
+    this.ws!.onclose = this.onclose;
   }
-
-  // public parse(message: string) {
-  //   message.trim();
-
-  //   const tokens = message.split(" ");
-
-  //   let commands = [];
-
-  //   let cmd: string | undefined;
-
-  //   let args: string[] = [];
-
-  //   for (const token of tokens) {
-  //     if (token.startsWith("!")) {
-  //       if (cmd) {
-  //         commands.push([cmd, ...args]);
-  //       }
-
-  //       cmd = token.slice(1);
-  //       args = [];
-  //     } else if (cmd) {
-  //       args.push(token);
-  //     }
-  //   }
-
-  //   if (cmd) {
-  //     commands.push([cmd, ...args]);
-  //   }
-
-  //   return commands;
-  // }
 
   public async disconnect() {
     this.ws?.close();
@@ -90,33 +73,6 @@ export class Messenger {
   protected pushToQueue(message: Message) {
     this.queue.enqueue(message);
   }
-
-  // public onmessage(event: any) {
-
-  // try {
-  //   const message = JSON.parse(event.data);
-
-  //   if (message.event == "App\\Events\\ChatMessageEvent") {
-  //     const chatMessage = JSON.parse(message.data);
-  //     const senderUsername = chatMessage?.sender?.slug;
-
-  //     const text = chatMessage.content;
-
-  //     const commands = this.parse(text);
-
-  //     this.pushToQueue({
-  //       text,
-  //       username: senderUsername,
-  //       commands,
-  //     });
-  //   }
-  // } catch (error) {
-  //   console.error(
-  //     `Error with event: ${JSON.stringify(event)} error: ${error}`
-  //   );
-  // }
-  // }
-
   public async send(message: string) {
     console.debug(`sending message to WebSocket connection ${message}`);
     this.ws?.send(message);
@@ -130,22 +86,36 @@ export class Messenger {
   public async reconnect() {
     this.disconnect();
 
-    this.connect(this.url, { timeout: this.timeout });
+    const timeout = this.settings.get("timeout");
+
+    this.wsConnect(this.url, { timeout });
+  }
+
+  public addEventListener(
+    event: "onerror" | "onmessage" | "onclose",
+    fn: (event: any) => void
+  ) {
+    this.eventListeners[event].push(fn);
   }
 
   onmessage = (event: any) => {
-    console.log(event);
+    this.eventListeners.onmessage.forEach((fn) => {
+      fn(event);
+    });
+
+    console.debug(event);
   };
 
   onerror = (event: Event) => {
+    this.eventListeners.onerror.forEach((fn) => {
+      fn(event);
+    });
     console.error("WebSocket error: ", event);
   };
 
   onclose = () => {
-    console.log("WebSocket connection closed");
-
-    console.log("Reconnecting...");
-
-    setTimeout(this.connect, 1000 * 2);
+    this.eventListeners.onerror.forEach((fn) => {
+      fn(undefined);
+    });
   };
 }

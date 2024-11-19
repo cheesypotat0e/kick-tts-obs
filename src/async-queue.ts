@@ -2,7 +2,12 @@ type AsyncQueueEOS = typeof EOS;
 
 const EOS: unique symbol = Symbol("end-of-stream");
 
-export class AsyncQueue<T = any> implements AsyncIterator<T> {
+export type QueueEntry = {
+  messageIndex: number;
+  segmentIndex: number;
+};
+
+export class AsyncQueue<T extends QueueEntry> implements AsyncIterator<T> {
   values: T[];
   closed: boolean;
   resolvers: Array<(value: T | AsyncQueueEOS) => void>;
