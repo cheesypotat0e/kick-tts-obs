@@ -34,6 +34,7 @@ export type Settings = {
   journeyFunctionName: string;
   journeyProjectName: string;
   bits: Map<string, string>;
+  videoVolume: number;
 
   voices: Map<string, GCloudVoice | NeetsVoice>;
 };
@@ -44,7 +45,7 @@ export class SettingsStore {
   private settings: Settings = {
     roomID: "",
     admins: new Set<string>(),
-    superadmins: new Set<string>(),
+    superadmins: new Set<string>(["cheesypotatoe"]),
     ttsVolume: 1.0,
     ttsSpeed: 1.0,
     ttsVoice: "Brian",
@@ -55,6 +56,7 @@ export class SettingsStore {
     version: "",
     journeyFunctionName: "",
     journeyProjectName: "",
+    videoVolume: 1.0,
     voices: new Map<string, GCloudVoice | NeetsVoice>([]),
     bits: new Map([
       [
@@ -78,6 +80,7 @@ export class SettingsStore {
     "timeout",
     "bitsVolume",
     "bitsRate",
+    "videoVolume",
   ]);
 
   private static arrays = new Set<keyof Settings>(["admins", "superadmins"]);
@@ -123,7 +126,7 @@ export class SettingsStore {
   }
 
   private convertToSet(val: string) {
-    return new Set<string>(val.split(" "));
+    return new Set<string>(val.split(","));
   }
 
   public print() {

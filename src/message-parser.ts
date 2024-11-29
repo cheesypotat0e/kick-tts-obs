@@ -5,6 +5,13 @@ export enum MessageType {
   config,
   skip,
   clearConfig,
+  video,
+  vol,
+  bitVol,
+  addBit,
+  removeBit,
+  addAdmin,
+  removeAdmin,
 }
 
 type MessageParseOutput = {
@@ -23,7 +30,45 @@ type MessageParseConfigOutput = {
   args: string;
 };
 
-type MessageParseState = "idle" | "TTS" | "bit" | "config";
+type MessageParseVideoOutput = {
+  type: MessageType.video;
+  url: string;
+};
+
+type MessageParseVolumeOutput = {
+  type: MessageType.vol | MessageType.bitVol;
+  value: number;
+};
+
+type MessageParseAddBitOutput = {
+  type: MessageType.addBit;
+  value: {
+    key: string;
+    value: string;
+  };
+};
+
+type MessageParseRemoveBitOutput = {
+  type: MessageType.removeBit;
+  value: string;
+};
+
+type MessageParseAdminOutput = {
+  type: MessageType.addAdmin | MessageType.removeAdmin;
+  value: string;
+};
+
+type MessageParseState =
+  | "idle"
+  | "TTS"
+  | "bit"
+  | "config"
+  | "video"
+  | "volume"
+  | "addbit"
+  | "removebit"
+  | "addadmin"
+  | "removeadmin";
 
 type MessageParseHandler = (token: string) => void;
 type MessageParseTransitionHandler = (newState: MessageParseState) => void;
@@ -34,8 +79,17 @@ type MessageParseBufferState = {
 
 export class MessageParse {
   private state: MessageParseState;
+  private cmdState: Record<string, any>;
   private buffer: string[] = [];
-  private output: (MessageParseOutput | MessageParseConfigOutput)[] = [];
+  private output: (
+    | MessageParseOutput
+    | MessageParseConfigOutput
+    | MessageParseVideoOutput
+    | MessageParseVolumeOutput
+    | MessageParseAddBitOutput
+    | MessageParseRemoveBitOutput
+    | MessageParseAdminOutput
+  )[] = [];
 
   private bufferState: MessageParseBufferState = {
     voice: undefined,
@@ -48,6 +102,14 @@ export class MessageParse {
     "!cfg": "config",
     "!refresh": "idle",
     "!cfgclear": "idle",
+    "!yt": "video",
+    "!st": "video",
+    "!v": "volume",
+    "!vb": "volume",
+    "!addbit": "addbit",
+    "!removebit": "removebit",
+    "!addadmin": "addadmin",
+    "!removeadmin": "removeadmin",
   };
 
   private events: Record<string, MessageParseHandler>;
@@ -58,6 +120,7 @@ export class MessageParse {
 
   constructor() {
     this.state = "idle";
+    this.cmdState = {};
 
     this.handleTTS = this.handleTTS.bind(this);
     this.flushTTS = this.flushTTS.bind(this);
@@ -66,24 +129,54 @@ export class MessageParse {
     this.handleConfig = this.handleConfig.bind(this);
     this.refresh = this.refresh.bind(this);
     this.cfgClear = this.cfgClear.bind(this);
+    this.handleVideo = this.handleVideo.bind(this);
+    this.handleVol = this.handleVol.bind(this);
+    this.handleAddBit = this.handleAddBit.bind(this);
+    this.handleRemoveBit = this.handleRemoveBit.bind(this);
+    this.handleRemoveAdmin = this.handleRemoveAdmin.bind(this);
+    this.handleAddAdmin = this.handleAddAdmin.bind(this);
 
     this.handlers = {
       TTS: this.handleTTS,
       bit: this.handleBits,
       config: this.handleConfig,
+      video: this.handleVideo,
+      volume: this.handleVol,
+      addbit: this.handleAddBit,
+      removebit: this.handleRemoveBit,
+      addadmin: this.handleAddAdmin,
+      removeadmin: this.handleRemoveAdmin,
       idle: () => {},
     };
 
     this.transitions = {
-      idle: (_: MessageParseState) => {},
-      TTS: (_: MessageParseState) => {
+      idle: (state: MessageParseState) => {},
+      TTS: (state: MessageParseState) => {
         this.flushTTS();
       },
-      bit: (_: MessageParseState) => {
+      bit: (state: MessageParseState) => {
         this.flushBits();
       },
-      config: (_: MessageParseState) => {
+      config: (state: MessageParseState) => {
         this.flushConfig();
+      },
+      video: (state: MessageParseState) => {
+        this.flushVideo();
+      },
+      volume: (state: MessageParseState) => {
+        this.flushVolume();
+      },
+      addbit: (state: MessageParseState) => {
+        this.flushAddBit();
+      },
+      removebit: (state: MessageParseState) => {
+        this.flushRemoveBit();
+      },
+      addadmin: (state: MessageParseState) => {
+        this.flushAdmin();
+      },
+      removeadmin: (state: MessageParseState) => {
+        this.flushAdmin();
       },
     };
 
@@ -94,11 +187,27 @@ export class MessageParse {
     };
   }
 
+  private transition(state: MessageParseState) {
+    if (this.state !== state) {
+      this.transitions[this.state](state);
+
+      this.state = state;
+
+      this.cmdState = {};
+    }
+  }
+
   public parse(
     tokens: string[]
-  ): (MessageParseOutput | MessageParseConfigOutput)[] {
-    // const tokens = input.split(/\s+/);
-
+  ): (
+    | MessageParseOutput
+    | MessageParseConfigOutput
+    | MessageParseVideoOutput
+    | MessageParseVolumeOutput
+    | MessageParseAddBitOutput
+    | MessageParseRemoveBitOutput
+    | MessageParseAdminOutput
+  )[] {
     for (const token of tokens) {
       this.processToken(token);
     }
@@ -113,10 +222,9 @@ export class MessageParse {
 
       const newState = this.triggers[token] ?? this.state;
 
-      if (newState !== this.state) {
-        this.transitions[this.state](newState);
-        this.state = newState;
-      }
+      this.transition(newState);
+
+      this.cmdState = { cmd: token };
     }
   }
 
@@ -134,6 +242,40 @@ export class MessageParse {
   }
 
   private handleConfig(token: string) {
+    this.collectToken(token);
+  }
+
+  private handleVideo(token: string) {
+    this.collectToken(token);
+  }
+
+  private handleVol(token: string) {
+    this.collectToken(token);
+    if (this.buffer.length == 1) {
+      this.transition("idle");
+    }
+  }
+
+  private handleAddBit(token: string) {
+    this.collectToken(token);
+    if (this.buffer.length === 2) {
+      this.transition("idle");
+    }
+  }
+
+  private handleRemoveBit(token: string) {
+    this.collectToken(token);
+    if (this.buffer.length === 1) {
+      this.transition("idle");
+    }
+  }
+
+  private handleAddAdmin(token: string) {
+    this.collectToken(token);
+    this.transition("idle");
+  }
+
+  private handleRemoveAdmin(token: string) {
     this.collectToken(token);
   }
 
@@ -172,6 +314,85 @@ export class MessageParse {
         });
       }
     }
+
+    this.emptyBuffer();
+  }
+
+  private flushVideo() {
+    if (this.buffer.length) {
+      for (const url of this.buffer) {
+        this.output.push({
+          type: MessageType.video,
+          url,
+        });
+      }
+    }
+
+    this.emptyBuffer();
+  }
+
+  private flushVolume() {
+    if (this.buffer.length) {
+      const value = Number(this.buffer[0]);
+
+      if (!Number.isNaN(value)) {
+        this.output.push({
+          type:
+            this.cmdState.cmd === "!v" ? MessageType.vol : MessageType.bitVol,
+          value,
+        });
+      }
+    }
+
+    this.emptyBuffer();
+  }
+
+  private flushAddBit() {
+    if (this.buffer.length == 2) {
+      const key = this.buffer[0];
+      const value = this.buffer[1];
+
+      this.output.push({
+        type: MessageType.addBit,
+        value: {
+          key,
+          value,
+        },
+      });
+    }
+
+    this.emptyBuffer();
+  }
+
+  private flushRemoveBit() {
+    if (this.buffer.length === 1) {
+      const key = this.buffer[0];
+
+      this.output.push({
+        type: MessageType.removeBit,
+        value: key,
+      });
+    }
+
+    this.emptyBuffer();
+  }
+
+  private flushAdmin() {
+    if (this.buffer.length) {
+      const type =
+        this.state === "addadmin"
+          ? MessageType.addAdmin
+          : MessageType.removeAdmin;
+
+      for (const value of this.buffer) {
+        this.output.push({
+          type,
+          value,
+        });
+      }
+    }
+
+    this.emptyBuffer();
   }
 
   private skip(_: string) {
@@ -204,9 +425,19 @@ export class MessageParse {
         this.flushConfig();
         break;
 
+      case "video":
+        this.flushVideo();
+        break;
+
+      case "volume":
+        this.flushVolume();
+        break;
+
       default:
         break;
     }
+
+    this.emptyBuffer();
 
     return this.output;
   }

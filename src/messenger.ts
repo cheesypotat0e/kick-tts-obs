@@ -1,4 +1,4 @@
-import { AsyncQueue } from "./async-queue";
+import { AsyncQueue, QueueEntry } from "./async-queue";
 import { SettingsStore } from "./settings";
 import { wait, withRetry, withTimeout } from "./utils";
 
@@ -10,7 +10,7 @@ export type Message = {
 
 export class Messenger {
   ws?: WebSocket;
-  queue: AsyncQueue<Message> = new AsyncQueue();
+  queue: AsyncQueue<Message & QueueEntry> = new AsyncQueue();
   isProcessing: boolean = false;
   url: string = "";
 
@@ -71,8 +71,9 @@ export class Messenger {
   }
 
   protected pushToQueue(message: Message) {
-    this.queue.enqueue(message);
+    this.queue.enqueue({ ...message, messageIndex: 0, segmentIndex: 0 });
   }
+
   public async send(message: string) {
     console.debug(`sending message to WebSocket connection ${message}`);
     this.ws?.send(message);
@@ -102,8 +103,6 @@ export class Messenger {
     this.eventListeners.onmessage.forEach((fn) => {
       fn(event);
     });
-
-    console.debug(event);
   };
 
   onerror = (event: Event) => {

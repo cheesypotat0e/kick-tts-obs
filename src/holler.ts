@@ -38,6 +38,8 @@ export class Holler {
         options: { html5, rate, volume, format },
       } = entry;
 
+      console.log({ volume });
+
       const audioData = await data;
 
       this.holler = new Howl({
