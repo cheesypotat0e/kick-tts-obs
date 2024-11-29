@@ -150,32 +150,32 @@ export class MessageParse {
     };
 
     this.transitions = {
-      idle: (state: MessageParseState) => {},
-      TTS: (state: MessageParseState) => {
+      idle: (_: MessageParseState) => {},
+      TTS: (_: MessageParseState) => {
         this.flushTTS();
       },
-      bit: (state: MessageParseState) => {
+      bit: (_: MessageParseState) => {
         this.flushBits();
       },
-      config: (state: MessageParseState) => {
+      config: (_: MessageParseState) => {
         this.flushConfig();
       },
-      video: (state: MessageParseState) => {
+      video: (_: MessageParseState) => {
         this.flushVideo();
       },
-      volume: (state: MessageParseState) => {
+      volume: (_: MessageParseState) => {
         this.flushVolume();
       },
-      addbit: (state: MessageParseState) => {
+      addbit: (_: MessageParseState) => {
         this.flushAddBit();
       },
-      removebit: (state: MessageParseState) => {
+      removebit: (_: MessageParseState) => {
         this.flushRemoveBit();
       },
-      addadmin: (state: MessageParseState) => {
+      addadmin: (_: MessageParseState) => {
         this.flushAdmin();
       },
-      removeadmin: (state: MessageParseState) => {
+      removeadmin: (_: MessageParseState) => {
         this.flushAdmin();
       },
     };

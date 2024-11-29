@@ -89,12 +89,12 @@ export class Holler {
         res();
       });
 
-      this.holler.on("loaderror", (id, error) => {
+      this.holler.on("loaderror", (_, error) => {
         console.error("Error with loading sound: ", error);
         rej();
       });
 
-      this.holler.on("playerror", (id, error) => {
+      this.holler.on("playerror", (_, error) => {
         console.error("Error with playing sound: ", error);
         rej();
       });
