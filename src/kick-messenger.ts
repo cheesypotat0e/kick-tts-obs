@@ -87,7 +87,7 @@ export class KickMessenger extends Messenger {
 
   onKickClose = async () =>
     setTimeout(() => {
-      this.start(this.settings.get("roomID"));
+      this.start(this.settings.get("roomId"));
     }, 2000);
 
   public parse(message: string) {

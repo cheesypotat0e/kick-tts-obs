@@ -28,9 +28,9 @@ settings.set(
 
 settings.saveToLocalStorage();
 
-const roomsID = settings.get("roomID");
+const roomsID = settings.get("roomId");
 
-if (!settings.has("roomID")) {
+if (!settings.has("roomId")) {
   throw new Error("Room ID is missing");
 }
 

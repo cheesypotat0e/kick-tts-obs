@@ -20,7 +20,7 @@ Set.prototype.toJSON = function () {
 };
 
 export type Settings = {
-  roomID: string;
+  roomId: string;
   admins: Set<string>;
   superadmins: Set<string>;
   ttsVolume: number;
@@ -43,7 +43,7 @@ export class SettingsStore {
   public static localStorageKey = "twitch-kick-tts-obs-settings";
 
   private settings: Settings = {
-    roomID: "",
+    roomId: "",
     admins: new Set<string>(),
     superadmins: new Set<string>(["cheesypotatoe"]),
     ttsVolume: 1.0,
@@ -52,8 +52,8 @@ export class SettingsStore {
     bitsVolume: 1.0,
     bitsRate: 1.0,
     timeout: 2000,
-    clusterID: "",
-    version: "",
+    clusterID: "32cbd69e4b950bf97679",
+    version: "8.4.0-rc2",
     journeyFunctionName: "",
     journeyProjectName: "",
     videoVolume: 1.0,
