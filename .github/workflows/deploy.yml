@@ -32,16 +32,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18 # Use a stable version of Node.js
-          cache: npm # Cache dependencies for faster builds
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
-      - name: Install Dependencies and Build
-        run: |
-          npm install
-          npm run build
+      - name: Run Build
+        run: npm run build
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
