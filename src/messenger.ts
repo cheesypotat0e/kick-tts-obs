@@ -17,9 +17,9 @@ export class Messenger {
   eventListeners: {
     onerror: ((event: any) => void)[];
     onmessage: ((event: any) => void)[];
-    onclose: ((event: any) => void)[];
+    onclose: ((event?: any) => void)[];
   } = {
-    onclose: [],
+    onclose: [() => this.reconnect()],
     onmessage: [],
     onerror: [],
   };
@@ -85,6 +85,7 @@ export class Messenger {
   }
 
   public async reconnect() {
+    console.debug("Reconnecting to WebSocket...");
     this.disconnect();
 
     const timeout = this.settings.get("timeout");
@@ -113,8 +114,8 @@ export class Messenger {
   };
 
   onclose = () => {
-    this.eventListeners.onerror.forEach((fn) => {
-      fn(undefined);
+    this.eventListeners.onclose.forEach((fn) => {
+      fn();
     });
   };
 }
