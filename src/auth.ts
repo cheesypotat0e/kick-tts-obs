@@ -19,6 +19,7 @@ export class Authorizer {
     [MessageType.addBit, Roles.Admin],
     [MessageType.removeBit, Roles.Admin],
     [MessageType.video, Roles.Admin],
+    [MessageType.refresh, Roles.Admin],
 
     [MessageType.addAdmin, Roles.SuperAdmin],
     [MessageType.removeAdmin, Roles.SuperAdmin],
