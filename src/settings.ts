@@ -40,7 +40,7 @@ export type Settings = {
 };
 
 export class SettingsStore {
-  public static localStorageKey = "twitch-kick-tts-obs-settings";
+  private static baseKey = "twitch-kick-tts-obs-settings";
 
   private settings: Settings = {
     roomId: "",
@@ -155,7 +155,7 @@ export class SettingsStore {
 
   public upsertFromLocalStorage() {
     const localStorageSettings = localStorage.getItem(
-      SettingsStore.localStorageKey
+      this.getLocalStorageKey()
     );
 
     if (!localStorageSettings) {
@@ -181,10 +181,14 @@ export class SettingsStore {
   public saveToLocalStorage() {
     const json = JSON.stringify(this.settings);
 
-    localStorage.setItem(SettingsStore.localStorageKey, json);
+    localStorage.setItem(this.getLocalStorageKey(), json);
   }
 
   public clearFromLocalStorage() {
-    localStorage.removeItem(SettingsStore.localStorageKey);
+    localStorage.removeItem(this.getLocalStorageKey());
+  }
+
+  private getLocalStorageKey() {
+    return `${SettingsStore.baseKey}-${this.settings.roomId}`;
   }
 }

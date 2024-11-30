@@ -3,7 +3,7 @@ import { BitsClient } from "./bitsClient.js";
 import { GCloudVoice, gcloudVoices } from "./gcloud-voices.js";
 import { Holler, MessageMap } from "./holler.js";
 import { KickMessenger } from "./kick-messenger.js";
-import { MessageParse, MessageType } from "./message-parser.js";
+import { MessageParser, MessageType } from "./message-parse-2.js";
 import { NeetsVoice, neetsVoices } from "./neets-voices.js";
 import { SettingsStore } from "./settings.js";
 import { TTSClient } from "./ttsClient.js";
@@ -65,7 +65,7 @@ for await (const message of kickMs.queue) {
 
   const { username, tokens } = message;
 
-  const parser = new MessageParse();
+  const parser = new MessageParser();
 
   const output = parser
     .parse(tokens)
@@ -105,11 +105,15 @@ for await (const message of kickMs.queue) {
         holler.skip();
         videoClient.skip();
         break;
-      case MessageType.config:
-        const { name, args } = segment;
 
-        if (settings.isValidKey(name)) {
-          settings.set(name, args);
+      case MessageType.refresh:
+        window.location.reload();
+        break;
+      case MessageType.config:
+        const { key, value } = segment;
+
+        if (settings.isValidKey(key)) {
+          settings.set(key, value);
         }
 
         settings.saveToLocalStorage();

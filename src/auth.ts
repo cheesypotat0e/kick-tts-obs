@@ -1,4 +1,4 @@
-import { MessageType } from "./message-parser";
+import { MessageType } from "./message-parse-2";
 import { SettingsStore } from "./settings";
 
 enum Roles {
@@ -18,6 +18,7 @@ export class Authorizer {
     [MessageType.vol, Roles.Admin],
     [MessageType.addBit, Roles.Admin],
     [MessageType.removeBit, Roles.Admin],
+    [MessageType.video, Roles.Admin],
 
     [MessageType.addAdmin, Roles.SuperAdmin],
     [MessageType.removeAdmin, Roles.SuperAdmin],

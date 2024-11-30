@@ -30,7 +30,9 @@ export class VideoClient {
     this.queue.enqueue({ url, type, volume, messageIndex: 0, segmentIndex: 0 });
   }
 
-  public async skip() {}
+  public async skip() {
+    this.player?.end();
+  }
 
   public async start() {
     for await (const message of this.queue) {
