@@ -38,20 +38,24 @@ export class Holler {
         options: { html5, rate, volume, format },
       } = entry;
 
-      const audioData = await data;
-
-      this.holler = new Howl({
-        src: [audioData],
-        html5,
-        rate,
-        volume,
-        format,
-      });
-
       try {
-        await this.play();
+        const audioData = await data;
+
+        this.holler = new Howl({
+          src: [audioData],
+          html5,
+          rate,
+          volume,
+          format,
+        });
+
+        try {
+          await this.play();
+        } catch (error) {
+          console.error("Error playing howl: ", error);
+        }
       } catch (error) {
-        console.error("Error playing howl: ", error);
+        console.error("Error with audio data: ", error);
       }
     }
   }
@@ -89,12 +93,12 @@ export class Holler {
 
       this.holler.on("loaderror", (_, error) => {
         console.error("Error with loading sound: ", error);
-        rej();
+        rej(error);
       });
 
       this.holler.on("playerror", (_, error) => {
         console.error("Error with playing sound: ", error);
-        rej();
+        rej(error);
       });
 
       this.holler.play();

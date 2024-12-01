@@ -87,20 +87,16 @@ export class TTSClient {
       }
 
       if (ttsMessage) {
-        try {
-          const data = Promise.resolve(ttsMessage.generate());
+        const data = Promise.resolve(ttsMessage.generate());
 
-          const { rate, volume } = voice;
+        const { rate, volume } = voice;
 
-          this.holler.enqueue({
-            data,
-            options: { rate, volume },
-            messageIndex,
-            segmentIndex,
-          });
-        } catch (error) {
-          console.error("Error playing tts message ", error);
-        }
+        this.holler.enqueue({
+          data,
+          options: { rate, volume },
+          messageIndex,
+          segmentIndex,
+        });
       }
     }
   }

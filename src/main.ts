@@ -15,8 +15,6 @@ const params = url.searchParams;
 
 const settings = SettingsStore.getInstance();
 
-localStorage.clear();
-
 if (params.has("roomID")) {
   params.set("roomId", params.get("roomID")!);
   params.delete("roomID");
@@ -60,7 +58,7 @@ holler.enqueue({
   messageIndex: 0,
   segmentIndex: 0,
   options: {
-    volume: 1,
+    volume: 0.5,
     rate: 1,
     html5: true,
   },
