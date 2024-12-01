@@ -15,6 +15,8 @@ const params = url.searchParams;
 
 const settings = SettingsStore.getInstance();
 
+localStorage.clear();
+
 if (params.has("roomID")) {
   params.set("roomId", params.get("roomID")!);
   params.delete("roomID");
@@ -50,6 +52,19 @@ const messageMap: MessageMap = new Map();
 const holler = new Holler(messageMap);
 
 holler.start();
+
+holler.enqueue({
+  data: Promise.resolve(
+    "https://www.myinstants.com/media/sounds/beep-in_ANMYFAI.mp3"
+  ),
+  messageIndex: 0,
+  segmentIndex: 0,
+  options: {
+    volume: 1,
+    rate: 1,
+    html5: true,
+  },
+});
 
 const ttsClient = new TTSClient(settings, holler);
 
