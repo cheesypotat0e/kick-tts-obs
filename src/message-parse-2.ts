@@ -25,6 +25,7 @@ export enum MessageType {
   video,
   vol,
   bitVol,
+  vidVol,
   addBit,
   removeBit,
   addAdmin,
@@ -71,7 +72,7 @@ export type MessageParseVideoOutput = BaseMessageOutput & {
 };
 
 export type MessageParseVolumeOutput = BaseMessageOutput & {
-  type: MessageType.vol | MessageType.bitVol;
+  type: MessageType.vol | MessageType.bitVol | MessageType.vidVol;
   value: number;
 };
 
@@ -268,7 +269,12 @@ export class MessageParser {
         return volumes
           .filter((volume) => !Number.isNaN(parseFloat(volume)))
           .map((volume) => ({
-            type: MessageType.vol,
+            type:
+              this.currentTrigger === "!vb"
+                ? MessageType.bitVol
+                : this.currentTrigger === "!vv"
+                ? MessageType.vidVol
+                : MessageType.vol,
             value: parseFloat(volume),
           }));
       },
@@ -350,11 +356,14 @@ export class MessageParser {
     "!st": "video",
     "!v": "volume",
     "!vb": "volume",
+    "!vv": "volume",
     "!addbit": "addbit",
     "!removebit": "removebit",
     "!addadmin": "addadmin",
     "!removeadmin": "removeadmin",
   };
+
+  private currentTrigger: string = "";
 
   public parse(tokens: string[]): MessageParseOutput[] {
     tokens.forEach((token) => this.processToken(token));
@@ -368,6 +377,7 @@ export class MessageParser {
 
   private processToken(token: string): void {
     if (this.isTrigger(token)) {
+      this.currentTrigger = token;
       this.handleStateTransition(token);
 
       if (this.states[this.currentState].shouldHandleTrigger) {

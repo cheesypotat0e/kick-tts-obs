@@ -175,6 +175,7 @@ for await (const message of kickMs.queue) {
             videoClient.enqueue({
               url: id,
               type: "streamable",
+              volume: settings.get("videoVolume"),
               messageIndex: 0,
               segmentIndex: 0,
             });
@@ -193,6 +194,14 @@ for await (const message of kickMs.queue) {
       case MessageType.bitVol: {
         const { value } = segment;
         settings.set("bitsVolume", value);
+        settings.saveToLocalStorage();
+
+        break;
+      }
+
+      case MessageType.vidVol: {
+        const { value } = segment;
+        settings.set("videoVolume", value);
         settings.saveToLocalStorage();
 
         break;
