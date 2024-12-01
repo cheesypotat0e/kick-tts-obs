@@ -8,6 +8,7 @@ import { NeetsVoice, neetsVoices } from "./neets-voices.js";
 import { SettingsStore } from "./settings.js";
 import { TTSClient } from "./ttsClient.js";
 import { VideoClient } from "./video-client.js";
+import { ImageClient } from "./image-client.js";
 
 const url = new URL(window.location.href);
 
@@ -77,6 +78,9 @@ await kickMs.start(roomsID);
 const videoClient = new VideoClient(settings);
 videoClient.start();
 
+const imageClient = new ImageClient();
+imageClient.start();
+
 const authorizer = new Authorizer(settings);
 
 let messageIndex = 0;
@@ -126,6 +130,7 @@ for await (const message of kickMs.queue) {
       case MessageType.skip:
         holler.skip();
         videoClient.skip();
+        imageClient.skip();
         break;
 
       case MessageType.refresh:
@@ -234,6 +239,18 @@ for await (const message of kickMs.queue) {
         const { value } = segment;
         settings.get("admins").delete(value);
         settings.saveToLocalStorage();
+        break;
+      }
+
+      case MessageType.image: {
+        const { url } = segment;
+
+        imageClient.enqueue({
+          url,
+          duration: 5000,
+          messageIndex: 0,
+          segmentIndex: 0,
+        });
         break;
       }
 

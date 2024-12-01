@@ -31,6 +31,7 @@ export enum MessageType {
   addAdmin,
   removeAdmin,
   refresh,
+  image,
 }
 
 export type BaseMessageOutput = {
@@ -94,6 +95,11 @@ export type MessageParseAdminOutput = BaseMessageOutput & {
   value: string;
 };
 
+export type MessageParseImageOutput = BaseMessageOutput & {
+  type: MessageType.image;
+  url: string;
+};
+
 export type MessageParseOutput =
   | MessageParseTTSOutput
   | MessageParseBitOutput
@@ -105,7 +111,8 @@ export type MessageParseOutput =
   | MessageParseAddBitOutput
   | MessageParseRemoveBitOutput
   | MessageParseAdminOutput
-  | MessageParseRefreshOutput;
+  | MessageParseRefreshOutput
+  | MessageParseImageOutput;
 
 type MessageParseState =
   | "idle"
@@ -117,7 +124,8 @@ type MessageParseState =
   | "addbit"
   | "removebit"
   | "addadmin"
-  | "removeadmin";
+  | "removeadmin"
+  | "image";
 
 export type TTSSegment = {
   text: string[];
@@ -343,6 +351,23 @@ export class MessageParser {
       },
       flushOnExit: true,
     },
+    image: {
+      onToken: (token: string) => {
+        if (
+          token.match(/^https:\/\/i\.imgur\.com\/[a-zA-Z0-9]+\.(jpg|jpeg|png)$/)
+        ) {
+          this.buffer.push(token);
+        }
+      },
+      outputTransform: (buffer: typeof this.buffer) => {
+        const images = buffer as string[];
+        return images.map((image) => ({
+          type: MessageType.image,
+          url: image,
+        }));
+      },
+      flushOnExit: true,
+    },
   };
 
   private triggers: Record<string, MessageParseState> = {
@@ -361,6 +386,7 @@ export class MessageParser {
     "!removebit": "removebit",
     "!addadmin": "addadmin",
     "!removeadmin": "removeadmin",
+    "!img": "image",
   };
 
   private currentTrigger: string = "";
