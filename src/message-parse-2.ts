@@ -160,6 +160,10 @@ export class MessageParser {
         if (token === "!skip") {
           this.buffer.push(MessageType.skip);
         }
+
+        if (token === "!cfgclear") {
+          this.buffer.push(MessageType.clearConfig);
+        }
       },
       outputTransform: (buffer: typeof this.buffer) => {
         const tokens = buffer as number[];

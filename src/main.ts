@@ -15,6 +15,11 @@ const params = url.searchParams;
 
 const settings = SettingsStore.getInstance();
 
+if (params.has("roomID")) {
+  params.set("roomId", params.get("roomID")!);
+  params.delete("roomID");
+}
+
 settings.upsertWithParams(params);
 settings.upsertFromLocalStorage();
 
@@ -25,6 +30,10 @@ settings.set(
     ...Object.entries(neetsVoices),
   ])
 );
+
+if (!settings.has("roomId")) {
+  settings.setFromString("roomId", "88774");
+}
 
 settings.saveToLocalStorage();
 
@@ -121,7 +130,9 @@ for await (const message of kickMs.queue) {
         break;
 
       case MessageType.clearConfig:
-        settings.clearFromLocalStorage();
+        // full clear from cfg
+        localStorage.clear();
+
         break;
 
       case MessageType.video:

@@ -159,7 +159,6 @@ export class SettingsStore {
     );
 
     if (!localStorageSettings) {
-      this.saveToLocalStorage();
       return;
     }
 
