@@ -12,10 +12,14 @@ export class AsyncQueue<T extends QueueEntry> implements AsyncIterator<T> {
   closed: boolean;
   resolvers: Array<(value: T | AsyncQueueEOS) => void>;
 
-  constructor() {
+  constructor(values?: T[]) {
     this.resolvers = [];
     this.values = [];
     this.closed = false;
+
+    if (values) {
+      this.values = [...values];
+    }
   }
 
   enqueue(value: T) {

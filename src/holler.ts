@@ -26,8 +26,21 @@ export class Holler {
 
   messageGroups: MessageMap = new Map();
 
+  static StartUpSound: HollerEntry = {
+    data: Promise.resolve(
+      "https://www.myinstants.com/media/sounds/beep-in_ANMYFAI.mp3"
+    ),
+    messageIndex: 0,
+    segmentIndex: 0,
+    options: {
+      volume: 0.5,
+      rate: 1,
+      html5: true,
+    },
+  };
+
   constructor(messageGroups: MessageMap) {
-    this.queue = new AsyncQueue();
+    this.queue = new AsyncQueue([Holler.StartUpSound]);
     this.messageGroups = messageGroups;
   }
 
