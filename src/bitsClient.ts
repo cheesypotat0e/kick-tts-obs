@@ -27,13 +27,13 @@ export class BitsClient {
     bitID: string,
     { messageIndex, segmentIndex }: QueueEntry
   ) {
-    const rate = this.settings.get("bitsRate");
-    const volume = this.settings.get("bitsVolume");
-
     const bits = this.settings.get("bits");
 
     if (bits.has(bitID)) {
-      const url = bits.get(bitID)!;
+      const { url, vol } = bits.get(bitID)!;
+
+      const rate = this.settings.get("bitsRate");
+      const volume = Math.min(vol, 1.0) ?? this.settings.get("bitsVolume");
 
       this.state.bitsQueue.enqueue({
         url,

@@ -33,7 +33,7 @@ export type Settings = {
   version: string;
   journeyFunctionName: string;
   journeyProjectName: string;
-  bits: Map<string, string>;
+  bits: Map<string, { url: string; vol: number }>;
   videoVolume: number;
 
   voices: Map<string, GCloudVoice | NeetsVoice>;
@@ -61,15 +61,39 @@ export class SettingsStore {
     bits: new Map([
       [
         "follow",
-        "https://www.myinstants.com/media/sounds/short_sms_wcluqam.mp3",
+        {
+          url: "https://www.myinstants.com/media/sounds/short_sms_wcluqam.mp3",
+          vol: 1.0,
+        },
       ],
-      ["fart", "https://www.myinstants.com/media/sounds/dry-fart.mp3"],
-      ["pluh", "https://www.myinstants.com/media/sounds/pluh.mp3"],
+      [
+        "fart",
+        {
+          url: "https://www.myinstants.com/media/sounds/dry-fart.mp3",
+          vol: 1.0,
+        },
+      ],
+      [
+        "pluh",
+        {
+          url: "https://www.myinstants.com/media/sounds/pluh.mp3",
+          vol: 1.0,
+        },
+      ],
 
-      ["boom", "https://www.myinstants.com/media/sounds/vine-boom.mp3"],
+      [
+        "boom",
+        {
+          url: "https://www.myinstants.com/media/sounds/vine-boom.mp3",
+          vol: 1.0,
+        },
+      ],
       [
         "discord",
-        "https://www.myinstants.com/media/sounds/discord-notification.mp3",
+        {
+          url: "https://www.myinstants.com/media/sounds/discord-notification.mp3",
+          vol: 1.0,
+        },
       ],
     ]),
   };
@@ -163,6 +187,15 @@ export class SettingsStore {
     }
 
     const settings = JSON.parse(localStorageSettings);
+
+    // migrate legacy bits
+    if (settings.bits) {
+      for (const [key, value] of Object.entries(settings.bits)) {
+        if (typeof value === "string") {
+          settings.bits[key] = { url: value, vol: 1.0 };
+        }
+      }
+    }
 
     for (const [key, value] of Object.entries<any>(settings)) {
       if (this.isValidKey(key)) {

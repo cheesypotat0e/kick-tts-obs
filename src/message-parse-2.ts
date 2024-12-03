@@ -82,6 +82,7 @@ export type MessageParseAddBitOutput = BaseMessageOutput & {
   value: {
     key: string;
     value: string;
+    vol?: number;
   };
 };
 
@@ -141,6 +142,7 @@ export type ConfigSegment = {
 export type AddBitSegment = {
   key: string;
   value?: string;
+  vol?: number;
 };
 
 const cleanText = (text: string): string => {
@@ -292,7 +294,11 @@ export class MessageParser {
       onToken: (token: string) => {
         const buffer = this.buffer as AddBitSegment[];
         if (buffer.length === 0 || buffer[buffer.length - 1].value) {
-          buffer.push({ key: token });
+          if (!Number.isNaN(parseFloat(token))) {
+            buffer[buffer.length - 1].vol = parseFloat(token);
+          } else {
+            buffer.push({ key: token });
+          }
         } else {
           const last = buffer[buffer.length - 1];
           last.value = token;
@@ -307,6 +313,7 @@ export class MessageParser {
             value: {
               key: addBit.key,
               value: addBit.value!,
+              vol: addBit.vol,
             },
           }));
       },

@@ -21,6 +21,11 @@ if (params.has("roomID")) {
   params.delete("roomID");
 }
 
+if (!params.has("roomId")) {
+  // recovery mode
+  params.set("roomId", "88774");
+}
+
 settings.upsertWithParams(params);
 settings.upsertFromLocalStorage();
 
@@ -31,10 +36,6 @@ settings.set(
     ...Object.entries(neetsVoices),
   ])
 );
-
-if (!settings.has("roomId")) {
-  settings.setFromString("roomId", "88774");
-}
 
 settings.saveToLocalStorage();
 
@@ -214,9 +215,9 @@ for await (const message of kickMs.queue) {
 
       case MessageType.addBit: {
         const {
-          value: { key, value },
+          value: { key, value, vol },
         } = segment;
-        settings.get("bits").set(key, value);
+        settings.get("bits").set(key, { url: value, vol: vol ?? 1.0 });
         settings.saveToLocalStorage();
         break;
       }
