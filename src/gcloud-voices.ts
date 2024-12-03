@@ -246,13 +246,13 @@ export const gcloudVoices: Record<string, GCloudVoice> = {
     code: "ml-IN",
     platform: "gcloud",
   },
-  "mandarin-chinese": {
-    voiceName: "cmn-CN-Neural2-B",
+  chinese: {
+    voiceName: "cmn-CN-Wavenet-A",
     code: "cmn-CN",
     platform: "gcloud",
   },
-  "mandarin-chinese-female": {
-    voiceName: "cmn-CN-Neural2-A",
+  "chinese-female": {
+    voiceName: "cmn-CN-Wavenet-B",
     code: "cmn-CN",
     platform: "gcloud",
   },
