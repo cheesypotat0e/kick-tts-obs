@@ -30,7 +30,7 @@ export class Authorizer {
   constructor(private settings: SettingsStore) {}
 
   public isAuthorized(username: string, command: MessageType) {
-    return (this.list.get(command) ?? 0) <= this.whoami(username);
+    return (this.list.get(command) ?? 0) <= this.whoami(username.toLowerCase());
   }
 
   whoami(username: string) {

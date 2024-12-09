@@ -218,14 +218,14 @@ for await (const message of kickMs.queue) {
 
       case MessageType.addAdmin: {
         const { value } = segment;
-        settings.get("admins").add(value);
+        settings.get("admins").add(value.toLowerCase());
         settings.saveToLocalStorage();
         break;
       }
 
       case MessageType.removeAdmin: {
         const { value } = segment;
-        settings.get("admins").delete(value);
+        settings.get("admins").delete(value.toLowerCase());
         settings.saveToLocalStorage();
         break;
       }
