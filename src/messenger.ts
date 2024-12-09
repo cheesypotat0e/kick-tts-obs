@@ -56,8 +56,6 @@ export class Messenger {
 
     this.url = url;
     console.debug("Connected to WebSocket");
-
-    this.ws!.onclose = this.onclose;
   }
 
   public async disconnect() {
