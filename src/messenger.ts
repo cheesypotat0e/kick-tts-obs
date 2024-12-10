@@ -44,6 +44,7 @@ export class Messenger {
 
       this.ws.onerror = this.onerror;
       this.ws.onmessage = this.onmessage;
+      this.ws.onclose = this.onclose;
 
       while (this.ws.readyState !== this.ws.OPEN) {
         await wait(500);
