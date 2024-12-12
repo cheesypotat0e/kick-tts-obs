@@ -19,7 +19,7 @@ export class Messenger {
     onmessage: ((event: any) => void)[];
     onclose: ((event?: any) => void)[];
   } = {
-    onclose: [() => this.reconnect()],
+    onclose: [],
     onmessage: [],
     onerror: [],
   };
