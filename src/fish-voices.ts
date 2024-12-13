@@ -15,4 +15,9 @@ export const fishVoices: Record<string, FishVoice> = {
     code: "fab595cc9bce4ca4938b5c6aa0693f99",
     platform: "fish",
   },
+  wyanot: {
+    voiceName: "wyanot",
+    code: "3677f5d2d80240fa97e5237c3a19a06f",
+    platform: "fish",
+  },
 };
