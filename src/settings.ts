@@ -1,3 +1,4 @@
+import { FishVoice } from "./fish-voices";
 import { GCloudVoice } from "./gcloud-voices";
 import { NeetsVoice } from "./neets-voices";
 
@@ -36,7 +37,7 @@ export type Settings = {
   bits: Map<string, { url: string; vol: number }>;
   videoVolume: number;
 
-  voices: Map<string, GCloudVoice | NeetsVoice>;
+  voices: Map<string, GCloudVoice | NeetsVoice | FishVoice>;
 };
 
 export class SettingsStore {

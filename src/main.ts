@@ -9,6 +9,7 @@ import { SettingsStore } from "./settings.js";
 import { TTSClient } from "./ttsClient.js";
 import { VideoClient } from "./video-client.js";
 import { ImageClient } from "./image-client.js";
+import { FishVoice, fishVoices } from "./fish-voices.js";
 
 const url = new URL(window.location.href);
 
@@ -31,9 +32,10 @@ settings.upsertFromLocalStorage();
 
 settings.set(
   "voices",
-  new Map<string, GCloudVoice | NeetsVoice>([
+  new Map<string, GCloudVoice | NeetsVoice | FishVoice>([
     ...Object.entries(gcloudVoices),
     ...Object.entries(neetsVoices),
+    ...Object.entries(fishVoices),
   ])
 );
 
