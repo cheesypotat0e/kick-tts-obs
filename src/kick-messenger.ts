@@ -30,16 +30,15 @@ export class KickMessenger extends Messenger {
 
   constructor(protected settings: SettingsStore) {
     super(settings);
+
+    this.addEventListener("onmessage", this.onKickMessage);
+    this.addEventListener("onclose", this.onKickClose);
   }
 
   public async start(roomID: string) {
     const url = this.getURL();
 
-    this.addEventListener("onmessage", this.onKickMessage);
-
     await this.connect(url);
-
-    this.addEventListener("onclose", this.onKickClose);
 
     const subscribeMessage = {
       event: "pusher:subscribe",
