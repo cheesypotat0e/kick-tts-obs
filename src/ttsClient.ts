@@ -4,6 +4,7 @@ import { Holler } from "./holler.js";
 import { Messenger } from "./messenger.js";
 import { AsyncQueue, QueueEntry } from "./async-queue.js";
 import { SettingsStore } from "./settings.js";
+import { fishVoices } from "./fish-voices.js";
 
 // type TTSVoice = {
 //   voiceName: string;
@@ -69,7 +70,8 @@ export class TTSClient {
         if (this.isGoogleEnabled()) {
           const id = voice.id.toLowerCase();
 
-          const gcloudVoice = gcloudVoices[id] ?? neetsVoices[id];
+          const gcloudVoice =
+            gcloudVoices[id] || neetsVoices[id] || fishVoices[id];
 
           ttsMessage = new GCloudTTSMessage(
             text,
@@ -230,17 +232,25 @@ function convertToBase64(arrayBuffer: ArrayBuffer, format: string) {
 
   return `data:audio/${format};base64,${base64}`;
 }
-
 function getAudioFormat(arrayBuffer: ArrayBuffer) {
   const dataView = new DataView(arrayBuffer);
 
-  // MP3 files usually start with the sequence "ID3" or have frame headers with sync bits.
+  // Check for ID3 header first
   if (
     dataView.getUint8(0) === 0x49 &&
     dataView.getUint8(1) === 0x44 &&
     dataView.getUint8(2) === 0x33
   ) {
     return "mp3";
+  }
+
+  for (let i = 0; i < Math.min(dataView.byteLength - 1, 2048); i++) {
+    const firstByte = dataView.getUint8(i);
+    const secondByte = dataView.getUint8(i + 1);
+
+    if (firstByte === 0xff && (secondByte & 0xe0) === 0xe0) {
+      return "mp3";
+    }
   }
 
   // WAV files start with the "RIFF" identifier and "WAVE" format identifier.
@@ -251,7 +261,7 @@ function getAudioFormat(arrayBuffer: ArrayBuffer) {
     return "wav";
   }
 
-  // OGG files start with "OggS".
+  // OGG/OGA files start with "OggS".
   if (
     dataView.getUint8(0) === 0x4f &&
     dataView.getUint8(1) === 0x67 &&
