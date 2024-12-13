@@ -62,6 +62,7 @@ def main(request):
             text,
             api_key=os.getenv("GCLOUD_KEY"),
             neet_api_key=os.getenv("NEETS_KEY"),
+            fish_api_key=os.getenv("FISH_KEY"),
             language=language.lower(),
             code=(code.lower() if code else None),
             platform=(platform.lower() if platform else None),
@@ -75,10 +76,11 @@ def main(request):
 
 
 def text_to_speech_api_key(
-    text, api_key, neet_api_key, language="french", code=None, platform=None, v2="false"
+    text, api_key, neet_api_key, fish_api_key, language="french", code=None, platform=None, v2="false"
 ):
     url = f"https://texttospeech.googleapis.com/v1/text:synthesize?key={api_key}"
     neet_url = "https://api.neets.ai/v1/tts"
+    fish_url = "https://api.fish.audio/v1/tts"
 
     if v2 == "true":
         if platform == "gcloud":
@@ -92,6 +94,19 @@ def text_to_speech_api_key(
             response = requests.post(url, headers=headers, data=json.dumps(payload))
             response.raise_for_status()
             return base64.b64decode(response.json().get("audioContent", ""))
+        elif platform == "fish":
+            headers = {
+                "Authorization": f"Bearer {fish_api_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "text": text,
+                "reference_id": code,
+                "format": "mp3"
+            }
+            response = requests.post(fish_url, headers=headers, json=payload)
+            response.raise_for_status()
+            return response.content
         elif platform == "neets":
             headers = {"Content-Type": "application/json", "X-API-Key": neet_api_key}
             data = {
