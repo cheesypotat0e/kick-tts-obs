@@ -7,7 +7,12 @@ export type FishVoice = {
 export const fishVoices: Record<string, FishVoice> = {
   dobbin: {
     voiceName: "dobbin",
-    code: "a141b907243a45caaab4103915e4ea81",
+    code: "c834a3a0a91044249ace1e220a52a2dc",
+    platform: "fish",
+  },
+  baba: {
+    voiceName: "baba",
+    code: "fab595cc9bce4ca4938b5c6aa0693f99",
     platform: "fish",
   },
 };
