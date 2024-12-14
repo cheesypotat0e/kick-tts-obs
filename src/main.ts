@@ -83,6 +83,10 @@ for await (const message of kickMs.queue) {
 
   const parser = new MessageParser();
 
+  if (message.username === "liilpump") {
+    continue;
+  }
+
   const output = parser
     .parse(tokens)
     .filter((output) => authorizer.isAuthorized(username, output.type));
