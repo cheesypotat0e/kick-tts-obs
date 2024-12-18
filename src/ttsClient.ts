@@ -53,52 +53,56 @@ export class TTSClient {
   public async startTTSQueue() {
     console.debug("starting tts queue...");
     for await (const message of this.state.ttsQueue) {
-      let {
-        options: { voice },
-        text,
-        messageIndex,
-        segmentIndex,
-      } = message;
-
-      voice.id ??= this.settings.get("ttsVoice");
-      voice.rate ??= this.settings.get("ttsSpeed");
-      voice.volume ??= this.settings.get("ttsVolume");
-
-      let ttsMessage: TTSMessage | undefined = undefined;
-
-      if (this.isGoogleVoice(voice.id)) {
-        if (this.isGoogleEnabled()) {
-          const id = voice.id.toLowerCase();
-
-          const gcloudVoice =
-            gcloudVoices[id] || neetsVoices[id] || fishVoices[id];
-
-          ttsMessage = new GCloudTTSMessage(
-            text,
-            gcloudVoice.voiceName,
-            gcloudVoice.code,
-            gcloudVoice.platform,
-            new GCloudFetch(
-              this.settings.get("journeyProjectName"),
-              this.settings.get("journeyFunctionName")
-            )
-          );
-        }
-      } else {
-        ttsMessage = new StreamElementsTTSMessage(text, voice.id);
-      }
-
-      if (ttsMessage) {
-        const data = Promise.resolve(ttsMessage.generate());
-
-        const { rate, volume } = voice;
-
-        this.holler.enqueue({
-          data,
-          options: { rate, volume },
+      try {
+        let {
+          options: { voice },
+          text,
           messageIndex,
           segmentIndex,
-        });
+        } = message;
+
+        voice.id ??= this.settings.get("ttsVoice");
+        voice.rate ??= this.settings.get("ttsSpeed");
+        voice.volume ??= this.settings.get("ttsVolume");
+
+        let ttsMessage: TTSMessage | undefined = undefined;
+
+        if (this.isGoogleVoice(voice.id)) {
+          if (this.isGoogleEnabled()) {
+            const id = voice.id.toLowerCase();
+
+            const gcloudVoice =
+              gcloudVoices[id] || neetsVoices[id] || fishVoices[id];
+
+            ttsMessage = new GCloudTTSMessage(
+              text,
+              gcloudVoice.voiceName,
+              gcloudVoice.code,
+              gcloudVoice.platform,
+              new GCloudFetch(
+                this.settings.get("journeyProjectName"),
+                this.settings.get("journeyFunctionName")
+              )
+            );
+          }
+        } else {
+          ttsMessage = new StreamElementsTTSMessage(text, voice.id);
+        }
+
+        if (ttsMessage) {
+          const data = Promise.resolve(ttsMessage.generate());
+
+          const { rate, volume } = voice;
+
+          this.holler.enqueue({
+            data,
+            options: { rate, volume },
+            messageIndex,
+            segmentIndex,
+          });
+        }
+      } catch (error) {
+        console.error("Error processing TTS message: ", error);
       }
     }
   }
