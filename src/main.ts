@@ -83,42 +83,45 @@ for await (const message of kickMs.queue) {
 
   const parser = new MessageParser();
 
-  if (message.username === "liilpump") {
-    continue;
-  }
-
   const output = parser
     .parse(tokens)
     .filter((output) => authorizer.isAuthorized(username, output.type));
 
   messageMap.set(messageIndex, {
-    size: output.reduce(
-      (acc, e) =>
-        acc + Number(e.type === MessageType.TTS || e.type === MessageType.bit),
-      0
-    ),
+    size: output.reduce((acc, e) => {
+      return (
+        acc +
+        Number(
+          (e.type === MessageType.TTS || e.type === MessageType.bit) &&
+            !!e.message
+        )
+      );
+    }, 0),
     entries: [],
   });
 
   for (const segment of output) {
     switch (segment.type) {
       case MessageType.TTS:
-        ttsClient.enqueTTSQueue({
-          text: segment.message,
-          options: {
-            voice: {
-              id: segment.voice,
-              volume: settings.get("ttsVolume"),
+        if (segment.message) {
+          ttsClient.enqueTTSQueue({
+            text: segment.message,
+            options: {
+              voice: {
+                id: segment.voice,
+                volume: settings.get("ttsVolume"),
+              },
             },
-          },
-          messageIndex,
-          segmentIndex,
-        });
-
+            messageIndex,
+            segmentIndex,
+          });
+        }
         break;
 
       case MessageType.bit:
-        bitsClient.enqueue(segment.message, { segmentIndex, messageIndex });
+        if (segment.message) {
+          bitsClient.enqueue(segment.message, { segmentIndex, messageIndex });
+        }
         break;
 
       case MessageType.skip:

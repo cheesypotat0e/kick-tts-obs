@@ -39,15 +39,19 @@ export class Messenger {
   public async wsConnect(url: string, settings: { timeout: number }) {
     const { timeout } = settings;
 
-    const connectTimeout = withTimeout<void>(async () => {
+    const connectTimeout = withTimeout<void>(async (signal) => {
       this.ws = new WebSocket(url);
 
       this.ws.onerror = this.onerror;
       this.ws.onmessage = this.onmessage;
       this.ws.onclose = this.onclose;
 
-      while (this.ws.readyState !== this.ws.OPEN) {
+      while (this.ws.readyState !== this.ws.OPEN && !signal.aborted) {
         await wait(500);
+      }
+
+      if (this.ws.readyState !== this.ws.OPEN) {
+        signal.throwIfAborted();
       }
     }, timeout);
 

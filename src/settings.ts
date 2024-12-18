@@ -38,6 +38,7 @@ export type Settings = {
   videoVolume: number;
 
   voices: Map<string, GCloudVoice | NeetsVoice | FishVoice>;
+  voiceVolumes: Map<string, number>;
 };
 
 export class SettingsStore {
@@ -59,6 +60,7 @@ export class SettingsStore {
     journeyProjectName: "",
     videoVolume: 1.0,
     voices: new Map<string, GCloudVoice | NeetsVoice>([]),
+    voiceVolumes: new Map<string, number>(),
     bits: new Map([
       [
         "follow",
@@ -99,17 +101,15 @@ export class SettingsStore {
     ]),
   };
 
-  private static numbers = new Set<keyof Settings>([
-    "ttsVolume",
-    "ttsSpeed",
-    "timeout",
-    "bitsVolume",
-    "bitsRate",
-    "videoVolume",
-  ]);
-
-  private static arrays = new Set<keyof Settings>(["admins", "superadmins"]);
-  private static maps = new Set<keyof Settings>(["voices", "bits"]);
+  private conversionMap: Record<
+    "string" | "number" | "set" | "map",
+    (val: string) => Settings[keyof Settings]
+  > = {
+    string: (val: string) => val,
+    number: this.convertToNumber,
+    map: (val: string) => new Map<string, any>(Object.entries(JSON.parse(val))),
+    set: this.convertToSet,
+  };
 
   private static instance: SettingsStore;
 
@@ -123,7 +123,7 @@ export class SettingsStore {
     return SettingsStore.instance;
   }
 
-  public set<Key extends keyof Settings>(key: Key, value: Settings[Key]) {
+  public set<Key extends keyof Settings>(key: Key, value: Settings[Key]): void {
     this.settings[key] = value;
   }
 
@@ -158,14 +158,48 @@ export class SettingsStore {
     console.log(this.settings);
   }
 
+  private getValueType(key: keyof Settings) {
+    const value = this.settings[key];
+
+    return this.getType(value);
+  }
+
+  private getType(value: Settings[keyof Settings]) {
+    if (value instanceof Set) {
+      return "set";
+    }
+
+    if (value instanceof Map) {
+      return "map";
+    }
+
+    if (typeof value === "number") {
+      return "number";
+    }
+
+    return "string";
+  }
+
+  private assertType<Key extends keyof Settings>(
+    key: Key,
+    converted: Settings[keyof Settings]
+  ): converted is Settings[Key] {
+    const type = this.getType(converted);
+    const valueType = this.getValueType(key);
+
+    return type === valueType;
+  }
+
   public setFromString<Key extends keyof Settings>(key: Key, value: string) {
     if (this.isValidKey(key)) {
-      if (SettingsStore.numbers.has(key)) {
-        this.set(key, this.convertToNumber(value) as never);
-      } else if (SettingsStore.arrays.has(key)) {
-        this.set(key, this.convertToSet(value) as never);
-      } else {
-        this.set(key, value as never);
+      const valueType = this.getValueType(key);
+
+      const convert = this.conversionMap[valueType];
+
+      const converted = convert(value);
+
+      if (this.assertType(key, converted)) {
+        this.set(key, converted);
       }
     }
   }
@@ -198,13 +232,11 @@ export class SettingsStore {
       }
     }
 
-    for (const [key, value] of Object.entries<any>(settings)) {
+    for (const [key, value] of Object.entries<Settings[keyof Settings]>(
+      settings
+    )) {
       if (this.isValidKey(key)) {
-        if (SettingsStore.arrays.has(key)) {
-          this.set(key, new Set(value));
-        } else if (SettingsStore.maps.has(key)) {
-          this.set(key, new Map(Object.entries(value as Object)));
-        } else {
+        if (this.assertType(key, value)) {
           this.set(key, value);
         }
       }

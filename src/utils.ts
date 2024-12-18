@@ -1,15 +1,11 @@
 export const withTimeout = <T>(
-  fn: () => T | PromiseLike<T>,
+  fn: (signal: AbortSignal) => T | PromiseLike<T>,
   timeout: number
 ) => {
-  const timeoutFn = () => {
-    return new Promise<T>((_, rej) => {
-      setTimeout(() => rej(new Error("Timed out")), timeout);
-    });
-  };
-
   return () => {
-    return Promise.race([fn(), timeoutFn()]);
+    const signal = AbortSignal.timeout(timeout);
+
+    return fn(signal);
   };
 };
 
@@ -20,7 +16,7 @@ export const withRetry =
 
     while (max === -1 || attempts++ < max) {
       try {
-        return Promise.resolve(await fn());
+        return await fn();
       } catch (error) {
         console.error("Error trying: ", error);
       }
@@ -28,7 +24,9 @@ export const withRetry =
       await wait(delay);
     }
 
-    return Promise.reject(new Error("Failed with retry"));
+    throw new Error(
+      `Failed with retry after ${max === -1 ? "infinite" : max} tries`
+    );
   };
 
 export const wait = async (timeout: number) => {

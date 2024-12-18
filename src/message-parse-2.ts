@@ -197,7 +197,8 @@ export class MessageParser {
 
         if (token.endsWith(":")) {
           const voice = token.slice(0, -1);
-          lastSegment.voice = voice;
+
+          this.buffer.push({ text: [], voice });
         } else {
           lastSegment.text.push(token);
         }
