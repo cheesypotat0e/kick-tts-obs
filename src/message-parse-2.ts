@@ -32,6 +32,8 @@ export enum MessageType {
   removeAdmin,
   refresh,
   image,
+  addVoice,
+  removeVoice,
 }
 
 export type BaseMessageOutput = {
@@ -101,6 +103,19 @@ export type MessageParseImageOutput = BaseMessageOutput & {
   url: string;
 };
 
+export type MessageParseAddVoiceOutput = BaseMessageOutput & {
+  type: MessageType.addVoice;
+  key: string;
+  voiceName: string;
+  platform: "neets" | "gcloud" | "fish";
+  codeOrModel: string;
+};
+
+export type MessageParseRemoveVoiceOutput = BaseMessageOutput & {
+  type: MessageType.removeVoice;
+  key: string;
+};
+
 export type MessageParseOutput =
   | MessageParseTTSOutput
   | MessageParseBitOutput
@@ -113,7 +128,9 @@ export type MessageParseOutput =
   | MessageParseRemoveBitOutput
   | MessageParseAdminOutput
   | MessageParseRefreshOutput
-  | MessageParseImageOutput;
+  | MessageParseImageOutput
+  | MessageParseAddVoiceOutput
+  | MessageParseRemoveVoiceOutput;
 
 type MessageParseState =
   | "idle"
@@ -126,7 +143,9 @@ type MessageParseState =
   | "removebit"
   | "addadmin"
   | "removeadmin"
-  | "image";
+  | "image"
+  | "addvoice"
+  | "removevoice";
 
 export type TTSSegment = {
   text: string[];
@@ -376,6 +395,46 @@ export class MessageParser {
       },
       flushOnExit: true,
     },
+    addvoice: {
+      onToken: (token: string) => {
+        const buffer = this.buffer as any[]; //Type is not important here
+        buffer.push(token);
+      },
+      shouldTransition: (buffer: typeof this.buffer) => {
+        return { shouldChange: buffer.length === 4, nextState: "idle" };
+      },
+      outputTransform: (buffer: typeof this.buffer) => {
+        const [key, voiceName, platform, codeOrModel] = buffer as string[];
+        return [
+          {
+            type: MessageType.addVoice,
+            key,
+            voiceName,
+            platform: platform as "neets" | "gcloud" | "fish",
+            codeOrModel,
+          },
+        ];
+      },
+      flushOnExit: true,
+    },
+    removevoice: {
+      onToken: (token: string) => {
+        this.buffer.push(token);
+      },
+      shouldTransition: (buffer: typeof this.buffer) => {
+        return { shouldChange: buffer.length === 1, nextState: "idle" };
+      },
+      outputTransform: (buffer: typeof this.buffer) => {
+        const [key] = buffer as string[];
+        return [
+          {
+            type: MessageType.removeVoice,
+            key,
+          },
+        ];
+      },
+      flushOnExit: true,
+    },
   };
 
   private triggers: Record<string, MessageParseState> = {
@@ -395,6 +454,8 @@ export class MessageParser {
     "!addadmin": "addadmin",
     "!removeadmin": "removeadmin",
     "!img": "image",
+    "!addvoice": "addvoice",
+    "!removevoice": "removevoice",
   };
 
   private currentTrigger: string = "";
@@ -422,7 +483,7 @@ export class MessageParser {
 
       const shouldTransition = this.states[this.currentState].shouldTransition;
 
-      if (shouldTransition) {
+      if (shouldTransition && shouldTransition(this.buffer)) {
         this.transition(
           token,
           this.states[this.currentState].shouldTransition!(this.buffer)

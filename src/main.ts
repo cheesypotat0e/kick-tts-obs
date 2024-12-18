@@ -30,9 +30,12 @@ if (!params.has("roomId")) {
 settings.upsertWithParams(params);
 settings.upsertFromLocalStorage();
 
+const existingVoices = settings.get("voices");
+
 settings.set(
   "voices",
   new Map<string, GCloudVoice | NeetsVoice | FishVoice>([
+    ...existingVoices,
     ...Object.entries(gcloudVoices),
     ...Object.entries(neetsVoices),
     ...Object.entries(fishVoices),
@@ -248,6 +251,28 @@ for await (const message of kickMs.queue) {
           messageIndex: 0,
           segmentIndex: 0,
         });
+        break;
+      }
+
+      case MessageType.addVoice: {
+        const { key, voiceName, platform, codeOrModel } = segment;
+        let newVoice: GCloudVoice | NeetsVoice | FishVoice;
+
+        if (platform === "gcloud" || platform === "fish") {
+          newVoice = { voiceName, code: codeOrModel, platform };
+        } else {
+          newVoice = { voiceName, model: codeOrModel, platform };
+        }
+
+        settings.get("voices").set(key, newVoice);
+        settings.saveToLocalStorage();
+        break;
+      }
+
+      case MessageType.removeVoice: {
+        const { key } = segment;
+        settings.get("voices").delete(key);
+        settings.saveToLocalStorage();
         break;
       }
 
