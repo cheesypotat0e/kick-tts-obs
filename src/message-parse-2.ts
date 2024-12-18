@@ -483,7 +483,7 @@ export class MessageParser {
 
       const shouldTransition = this.states[this.currentState].shouldTransition;
 
-      if (shouldTransition && shouldTransition(this.buffer)) {
+      if (shouldTransition && shouldTransition(this.buffer).shouldChange) {
         this.transition(
           token,
           this.states[this.currentState].shouldTransition!(this.buffer)

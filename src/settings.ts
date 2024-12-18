@@ -221,9 +221,26 @@ export class SettingsStore {
       return;
     }
 
-    const settings = JSON.parse(localStorageSettings);
+    try {
+      const settings = JSON.parse(localStorageSettings);
 
-    // migrate legacy bits
+      // Migrate legacy bits
+      this.migrateLegacyBits(settings);
+
+      for (const [key, value] of Object.entries(settings)) {
+        if (this.isValidKey(key)) {
+          const typedValue = this.convertFromLocalStorage(key, value);
+          if (this.assertType(key, typedValue)) {
+            this.set(key, typedValue);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error loading settings from localStorage:", error);
+    }
+  }
+
+  private migrateLegacyBits(settings: any): void {
     if (settings.bits) {
       for (const [key, value] of Object.entries(settings.bits)) {
         if (typeof value === "string") {
@@ -231,16 +248,19 @@ export class SettingsStore {
         }
       }
     }
+  }
 
-    for (const [key, value] of Object.entries<Settings[keyof Settings]>(
-      settings
-    )) {
-      if (this.isValidKey(key)) {
-        if (this.assertType(key, value)) {
-          this.set(key, value);
-        }
-      }
+  private convertFromLocalStorage<Key extends keyof Settings>(
+    key: Key,
+    value: any
+  ): Settings[Key] {
+    const valueType = this.getValueType(key);
+    if (valueType === "map") {
+      return new Map(Object.entries(value)) as Settings[Key];
+    } else if (valueType === "set") {
+      return new Set(Object.values(value)) as Settings[Key];
     }
+    return value as Settings[Key];
   }
 
   public saveToLocalStorage() {

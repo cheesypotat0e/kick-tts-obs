@@ -35,7 +35,7 @@ const existingVoices = settings.get("voices");
 settings.set(
   "voices",
   new Map<string, GCloudVoice | NeetsVoice | FishVoice>([
-    ...existingVoices,
+    ...existingVoices.entries(),
     ...Object.entries(gcloudVoices),
     ...Object.entries(neetsVoices),
     ...Object.entries(fishVoices),

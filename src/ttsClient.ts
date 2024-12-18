@@ -1,17 +1,7 @@
-import { gcloudVoices } from "./gcloud-voices.js";
-import { neetsVoices } from "./neets-voices.js";
 import { Holler } from "./holler.js";
 import { Messenger } from "./messenger.js";
 import { AsyncQueue, QueueEntry } from "./async-queue.js";
 import { SettingsStore } from "./settings.js";
-import { fishVoices } from "./fish-voices.js";
-
-// type TTSVoice = {
-//   voiceName: string;
-//   code?: string;
-//   model?: string;
-//   platform: string;
-// };
 
 type TTSState = {
   ms?: Messenger;
@@ -33,14 +23,11 @@ export type TTSEntry = {
   };
 } & QueueEntry;
 
-// const kickObsTTSSettings = "kick-obs-tts-settings";
-
 export class TTSClient {
   state: TTSState = {
     ms: undefined,
     ttsQueue: new AsyncQueue<TTSEntry>(),
     audio: undefined,
-    // sendQueue: new AsyncQueue(),
     processingTTSQueue: false,
   };
 
@@ -71,14 +58,17 @@ export class TTSClient {
           if (this.isGoogleEnabled()) {
             const id = voice.id.toLowerCase();
 
-            const gcloudVoice =
-              gcloudVoices[id] || neetsVoices[id] || fishVoices[id];
+            const v = this.settings.get("voices").get(id);
+
+            if (!v) {
+              continue;
+            }
 
             ttsMessage = new GCloudTTSMessage(
               text,
-              gcloudVoice.voiceName,
-              gcloudVoice.code,
-              gcloudVoice.platform,
+              v.voiceName,
+              v.platform === "neets" ? "" : v.code,
+              v.platform,
               new GCloudFetch(
                 this.settings.get("journeyProjectName"),
                 this.settings.get("journeyFunctionName")
@@ -173,7 +163,7 @@ class GCloudTTSMessage implements TTSMessage {
     private text: string,
     private voice: string,
     private code: string,
-    private platform: "gcloud" | "neets",
+    private platform: "gcloud" | "neets" | "fish",
     private fetch: GCloudFetch
   ) {}
 
