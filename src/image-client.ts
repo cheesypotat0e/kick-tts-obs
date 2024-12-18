@@ -9,7 +9,7 @@ export class ImageClient {
   queue: AsyncQueue<ImageEntry> = new AsyncQueue();
   private currentImage?: HTMLImageElement;
   private container?: HTMLDivElement;
-  private cancelTimeout?: number;
+  private cancelTimeout?: ReturnType<typeof setTimeout>;
   private resolve?: () => void;
 
   constructor() {

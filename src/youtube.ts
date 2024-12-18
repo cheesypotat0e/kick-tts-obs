@@ -10,7 +10,7 @@ export type YoutubePlayerState = {
 export class YoutubeVideoPlayer implements VideoPlayer {
   state: YoutubePlayerState = {};
   doneResolver?: () => void;
-  timeout?: number;
+  timeout?: ReturnType<typeof setTimeout>;
 
   play(id: string, options?: { volume: number }) {
     let done = false;

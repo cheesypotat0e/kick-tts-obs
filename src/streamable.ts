@@ -4,7 +4,7 @@ export class StreamablePlayer implements VideoPlayer {
   ended: boolean = false;
   endedResolver?: () => void;
   video?: HTMLVideoElement;
-  timeout?: number;
+  timeout?: ReturnType<typeof setTimeout>;
 
   public static StreamableAPIURLPrefix = "https://api.streamable.com/videos/";
 
