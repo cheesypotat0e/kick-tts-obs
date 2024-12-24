@@ -524,7 +524,7 @@ export class MessageParser {
           return [];
         }
 
-        const [username, period, requests] = buffer as string[];
+        const [username, requests, period] = buffer as string[];
         return [
           {
             type: MessageType.addLimit,

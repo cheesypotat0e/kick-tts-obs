@@ -93,11 +93,9 @@ for await (const message of kickMs.queue) {
 
     const { username, tokens } = message;
 
-    if (isBanned(username) || !rateLimiter.canRequest(username)) {
+    if (isBanned(username)) {
       continue;
     }
-
-    rateLimiter.addRequest(username);
 
     const parser = new MessageParser();
 
@@ -119,6 +117,12 @@ for await (const message of kickMs.queue) {
     });
 
     for (const segment of output) {
+      if (!rateLimiter.canRequest(username)) {
+        continue;
+      }
+
+      rateLimiter.addRequest(username);
+
       switch (segment.type) {
         case MessageType.TTS:
           if (segment.message) {
@@ -305,7 +309,7 @@ for await (const message of kickMs.queue) {
         case MessageType.addLimit: {
           const { username, requests, period } = segment;
           rateLimiter.setRecord(username.toLowerCase(), { requests, period });
-          settings.get("rateLimits").set(username, { period, requests });
+          settings.get("rateLimits").set(username, { requests, period });
           settings.saveToLocalStorage();
           break;
         }
