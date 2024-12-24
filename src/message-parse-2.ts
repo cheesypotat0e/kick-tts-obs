@@ -34,6 +34,10 @@ export enum MessageType {
   image,
   addVoice,
   removeVoice,
+  ban,
+  unban,
+  addLimit,
+  removeLimit,
 }
 
 export type BaseMessageOutput = {
@@ -98,6 +102,17 @@ export type MessageParseAdminOutput = BaseMessageOutput & {
   value: string;
 };
 
+export type MessageParseBanOutput = BaseMessageOutput & {
+  type: MessageType.ban;
+  value: string;
+  expiration?: number;
+};
+
+export type MessageParseUnbanOutput = BaseMessageOutput & {
+  type: MessageType.unban;
+  value: string;
+};
+
 export type MessageParseImageOutput = BaseMessageOutput & {
   type: MessageType.image;
   url: string;
@@ -116,6 +131,18 @@ export type MessageParseRemoveVoiceOutput = BaseMessageOutput & {
   key: string;
 };
 
+export type MessageParseAddLimitOutput = BaseMessageOutput & {
+  type: MessageType.addLimit;
+  username: string;
+  period: number;
+  requests: number;
+};
+
+export type MessageParseRemoveLimitOutput = BaseMessageOutput & {
+  type: MessageType.removeLimit;
+  username: string;
+};
+
 export type MessageParseOutput =
   | MessageParseTTSOutput
   | MessageParseBitOutput
@@ -130,7 +157,11 @@ export type MessageParseOutput =
   | MessageParseRefreshOutput
   | MessageParseImageOutput
   | MessageParseAddVoiceOutput
-  | MessageParseRemoveVoiceOutput;
+  | MessageParseRemoveVoiceOutput
+  | MessageParseBanOutput
+  | MessageParseUnbanOutput
+  | MessageParseAddLimitOutput
+  | MessageParseRemoveLimitOutput;
 
 type MessageParseState =
   | "idle"
@@ -145,7 +176,11 @@ type MessageParseState =
   | "removeadmin"
   | "image"
   | "addvoice"
-  | "removevoice";
+  | "removevoice"
+  | "ban"
+  | "unban"
+  | "addlimit"
+  | "removelimit";
 
 export type TTSSegment = {
   text: string[];
@@ -378,6 +413,48 @@ export class MessageParser {
       },
       flushOnExit: true,
     },
+    ban: {
+      onToken: (token: string) => {
+        this.buffer.push(token);
+      },
+      outputTransform: (buffer: typeof this.buffer) => {
+        const n = buffer.length;
+        const output: MessageParseBanOutput[] = [];
+
+        for (let i = 0; i < n; i++) {
+          const curr: MessageParseBanOutput = {
+            type: MessageType.ban,
+            value: "",
+            expiration: -1,
+          };
+
+          curr.value = buffer[i] as string;
+
+          if (i < n - 1 && !isNaN(Number(buffer[i + 1]))) {
+            curr.expiration = Date.now() + parseInt(buffer[i + 1] as string);
+            i++;
+          }
+
+          output.push(curr);
+        }
+
+        return output;
+      },
+      flushOnExit: true,
+    },
+    unban: {
+      onToken: (token: string) => {
+        this.buffer.push(token);
+      },
+      outputTransform: (buffer: typeof this.buffer) => {
+        const unbannedUsers = buffer as string[];
+        return unbannedUsers.map((user) => ({
+          type: MessageType.unban,
+          value: user,
+        }));
+      },
+      flushOnExit: true,
+    },
     image: {
       onToken: (token: string) => {
         if (
@@ -435,6 +512,52 @@ export class MessageParser {
       },
       flushOnExit: true,
     },
+    addlimit: {
+      onToken: (token: string) => {
+        this.buffer.push(token);
+      },
+      shouldTransition: (buffer: typeof this.buffer) => {
+        return { shouldChange: buffer.length === 3, nextState: "idle" };
+      },
+      outputTransform: (buffer: typeof this.buffer) => {
+        if (buffer.length < 3) {
+          return [];
+        }
+
+        const [username, requests, period] = buffer as string[];
+        return [
+          {
+            type: MessageType.addLimit,
+            username,
+            period: parseInt(period),
+            requests: parseInt(requests),
+          },
+        ];
+      },
+      flushOnExit: true,
+    },
+    removelimit: {
+      onToken: (token: string) => {
+        this.buffer.push(token);
+      },
+      shouldTransition: (buffer: typeof this.buffer) => {
+        return { shouldChange: buffer.length === 1, nextState: "idle" };
+      },
+      outputTransform: (buffer: typeof this.buffer) => {
+        if (buffer.length < 1) {
+          return [];
+        }
+
+        const [username] = buffer as string[];
+        return [
+          {
+            type: MessageType.removeLimit,
+            username,
+          },
+        ];
+      },
+      flushOnExit: true,
+    },
   };
 
   private triggers: Record<string, MessageParseState> = {
@@ -456,6 +579,10 @@ export class MessageParser {
     "!img": "image",
     "!addvoice": "addvoice",
     "!removevoice": "removevoice",
+    "!ban": "ban",
+    "!unban": "unban",
+    "!addlimit": "addlimit",
+    "!removelimit": "removelimit",
   };
 
   private currentTrigger: string = "";

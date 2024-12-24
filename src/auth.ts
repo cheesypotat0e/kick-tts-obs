@@ -25,6 +25,12 @@ export class Authorizer {
     [MessageType.removeAdmin, Roles.SuperAdmin],
     [MessageType.config, Roles.SuperAdmin],
     [MessageType.clearConfig, Roles.SuperAdmin],
+    [MessageType.addVoice, Roles.Admin],
+    [MessageType.removeVoice, Roles.Admin],
+    [MessageType.ban, Roles.Admin],
+    [MessageType.unban, Roles.Admin],
+    [MessageType.addLimit, Roles.Admin],
+    [MessageType.removeLimit, Roles.Admin],
   ]);
 
   constructor(private settings: SettingsStore) {}
