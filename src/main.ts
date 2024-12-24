@@ -140,7 +140,7 @@ for await (const message of kickMs.queue) {
         const { key, value } = segment;
 
         if (settings.isValidKey(key)) {
-          settings.set(key, value);
+          settings.setFromString(key, value);
         }
 
         settings.saveToLocalStorage();
