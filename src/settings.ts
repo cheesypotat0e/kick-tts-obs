@@ -39,6 +39,14 @@ export type Settings = {
 
   voices: Map<string, GCloudVoice | NeetsVoice | FishVoice>;
   voiceVolumes: Map<string, number>;
+
+  bans: Map<
+    string,
+    {
+      expiration?: number;
+    }
+  >;
+  rateLimits: Map<string, { period: number; requests: number }>;
 };
 
 export class SettingsStore {
@@ -99,6 +107,8 @@ export class SettingsStore {
         },
       ],
     ]),
+    bans: new Map<string, { expiration?: number }>(),
+    rateLimits: new Map<string, { period: number; requests: number }>(),
   };
 
   private conversionMap: Record<
