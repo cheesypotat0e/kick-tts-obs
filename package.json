@@ -6,22 +6,32 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "synth": "cdk synth",
+    "diff": "cdk diff",
+    "cdk-deploy": "cdk deploy"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.712.0",
     "@aws-sdk/util-dynamodb": "^3.712.0",
+    "aws-lambda": "^1.0.7",
     "howler": "^2.2.4",
-    "i": "^0.3.7",
+    "joi": "^17.13.3",
     "npm": "^10.9.0",
+    "uuid": "^11.0.3",
     "youtube-player": "^5.6.0"
   },
   "devDependencies": {
+    "@types/aws-lambda": "^8.10.146",
     "@types/howler": "^2.2.12",
     "@types/node": "^22.10.2",
     "@types/youtube-player": "^5.5.11",
+    "cdk": "^2.173.2",
+    "esbuild": "^0.24.2",
+    "glob": "^11.0.0",
     "ts-node": "^10.9.2",
     "typescript": "~5.6.2",
-    "vite": "^5.4.10"
+    "vite": "^5.4.10",
+    "vite-plugin-node": "^4.0.0"
   }
 }

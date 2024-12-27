@@ -1,22 +1,28 @@
 import { Authorizer } from "./auth.js";
 import { BitsClient } from "./bitsClient.js";
-import { GCloudVoice, gcloudVoices } from "./gcloud-voices.js";
+import { GCloudVoice } from "./gcloud-voices.js";
 import { Holler, MessageMap } from "./holler.js";
 import { KickMessenger } from "./kick-messenger.js";
 import { MessageParser, MessageType } from "./message-parse-2.js";
-import { NeetsVoice, neetsVoices } from "./neets-voices.js";
+import { NeetsVoice } from "./neets-voices.js";
 import { SettingsStore } from "./settings.js";
 import { TTSClient } from "./ttsClient.js";
 import { VideoClient } from "./video-client.js";
 import { ImageClient } from "./image-client.js";
-import { FishVoice, fishVoices } from "./fish-voices.js";
+import { FishVoice } from "./fish-voices.js";
 import { RateLimiter } from "./rate-limit.js";
 
 const url = new URL(window.location.href);
 
 const params = url.searchParams;
 
-const settings = SettingsStore.getInstance();
+const apiUrl = import.meta.env.VITE_API_URL;
+
+if (!apiUrl) {
+  throw new Error("Missing API URL");
+}
+
+const settings = SettingsStore.getInstance(apiUrl);
 
 if (params.has("roomID")) {
   params.set("roomId", params.get("roomID")!);
@@ -28,22 +34,56 @@ if (!params.has("roomId")) {
   params.set("roomId", "88774");
 }
 
-settings.upsertWithParams(params);
-settings.upsertFromLocalStorage();
+// settings.upsertWithParams(params);
+// settings.upsertFromLocalStorage();
 
-const existingVoices = settings.get("voices");
+// const existingVoices = settings.get("voices");
 
-settings.set(
-  "voices",
-  new Map<string, GCloudVoice | NeetsVoice | FishVoice>([
-    ...existingVoices.entries(),
-    ...Object.entries(gcloudVoices),
-    ...Object.entries(neetsVoices),
-    ...Object.entries(fishVoices),
-  ])
+// settings.set(
+//   "voices",
+//   new Map<string, GCloudVoice | NeetsVoice | FishVoice>([
+//     ...existingVoices.entries(),
+//     ...Object.entries(gcloudVoices),
+//     ...Object.entries(neetsVoices),
+//     ...Object.entries(fishVoices),
+//   ])
+// );
+
+// settings.saveToLocalStorage();
+
+// function convertSettingsToPostSettingsRequest(
+//   settings: Settings
+// ): PostSettingsRequest {
+//   return {
+//     roomId: settings.roomId,
+//     admins: [...settings.admins],
+//     superadmins: [...settings.superadmins],
+//     ttsVolume: settings.ttsVolume,
+//     ttsSpeed: settings.ttsSpeed,
+//     ttsVoice: settings.ttsVoice,
+//     bitsVolume: settings.bitsVolume,
+//     bitsRate: settings.bitsRate,
+//     timeout: settings.timeout,
+//     clusterID: settings.clusterID,
+//     version: settings.version,
+//     journeyFunctionName: settings.journeyFunctionName,
+//     journeyProjectName: settings.journeyProjectName,
+//     bits: settings.newBits.toJSON(),
+//     videoVolume: settings.videoVolume,
+//     voices: settings.newVoices.toJSON(),
+//     voiceVolumes: settings.voiceVolumes.toJSON(),
+//     bans: settings.bans.toJSON(),
+//     rateLimits: settings.rateLimits.toJSON(),
+//   };
+// }
+
+const setttingsId = localStorage.getItem(
+  `twitch-kick-tts-obs-settings-id-${params.get("roomId")}`
 );
 
-settings.saveToLocalStorage();
+if (setttingsId) {
+  await settings.upsetFromAPI(setttingsId);
+}
 
 const roomsID = settings.get("roomId");
 

@@ -52,11 +52,14 @@ export class TTSClient {
         voice.rate ??= this.settings.get("ttsSpeed");
         voice.volume ??= this.settings.get("ttsVolume");
 
+        // normalize voice.id
+        voice.id = voice.id.toLowerCase();
+
         let ttsMessage: TTSMessage | undefined = undefined;
 
         if (this.isGoogleVoice(voice.id)) {
           if (this.isGoogleEnabled()) {
-            const id = voice.id.toLowerCase();
+            const { id } = voice;
 
             const v = this.settings.get("voices").get(id);
 

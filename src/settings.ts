@@ -1,5 +1,6 @@
 import { FishVoice } from "./fish-voices";
 import { GCloudVoice } from "./gcloud-voices";
+import { GetSettingApi, SettingsApiError } from "./lambda/settings";
 import { NeetsVoice } from "./neets-voices";
 
 declare global {
@@ -51,8 +52,9 @@ export type Settings = {
 
 export class SettingsStore {
   private static baseKey = "twitch-kick-tts-obs-settings";
+  private baseURL;
 
-  private settings: Settings = {
+  public settings: Settings = {
     roomId: "",
     admins: new Set<string>(),
     superadmins: new Set<string>(["cheesypotatoe"]),
@@ -123,11 +125,13 @@ export class SettingsStore {
 
   private static instance: SettingsStore;
 
-  private constructor() {}
+  private constructor(url: string) {
+    this.baseURL = url;
+  }
 
-  public static getInstance(): SettingsStore {
+  public static getInstance(url: string): SettingsStore {
     if (!SettingsStore.instance) {
-      SettingsStore.instance = new SettingsStore();
+      SettingsStore.instance = new SettingsStore(url);
     }
 
     return SettingsStore.instance;
@@ -198,6 +202,36 @@ export class SettingsStore {
     const valueType = this.getValueType(key);
 
     return type === valueType;
+  }
+
+  private convertGetSettingApiToSettings(resBody: GetSettingApi) {
+    const { id, ...rest } = resBody;
+
+    return {
+      ...rest,
+      admins: new Set(rest.admins),
+      superadmins: new Set(rest.superadmins),
+      bits: new Map(Object.entries(rest.bits)),
+      voices: new Map(Object.entries(rest.voices)),
+      voiceVolumes: new Map(Object.entries(rest.voiceVolumes)),
+      bans: new Map(Object.entries(rest.bans)),
+      rateLimits: new Map(Object.entries(rest.rateLimits)),
+    };
+  }
+
+  public async upsetFromAPI(id: string) {
+    const res = await fetch(this.baseURL + "settings/" + id);
+
+    const body = await res.json();
+
+    if (res.status >= 400) {
+      const errorBody = body as SettingsApiError;
+      throw new Error("Error getting settings: " + errorBody.message);
+    }
+
+    const resBody = body.settings as GetSettingApi;
+
+    this.settings = this.convertGetSettingApiToSettings(resBody);
   }
 
   public setFromString<Key extends keyof Settings>(key: Key, value: string) {
