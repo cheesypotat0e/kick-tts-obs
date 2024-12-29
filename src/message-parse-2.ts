@@ -209,6 +209,9 @@ export type AddBitSegment = {
   vol?: number;
 };
 
+export const imageRegex =
+  /(https?:\/\/\S+\.(?:jpg|jpeg|png|gif|webp|avif)$)|(?:https?:\/\/imgur\.com\/(?:([a-zA-Z0-9]+$)|(a\/[a-zA-Z0-9]+)))/;
+
 const cleanText = (text: string): string => {
   const emoteRegex = /\[emote:(\d+):([^\]]+)\]/g;
   return text.replace(emoteRegex, "").trim();
@@ -496,9 +499,7 @@ export class MessageParser {
     },
     image: {
       onToken: (token: string) => {
-        if (
-          token.match(/^https:\/\/i\.imgur\.com\/[a-zA-Z0-9]+\.(jpg|jpeg|png)$/)
-        ) {
+        if (token.match(imageRegex)) {
           this.buffer.push(token);
         }
       },

@@ -3,7 +3,7 @@ import { BitsClient } from "./bitsClient.js";
 import { GCloudVoice, gcloudVoices } from "./gcloud-voices.js";
 import { Holler, MessageMap } from "./holler.js";
 import { KickMessenger } from "./kick-messenger.js";
-import { MessageParser, MessageType } from "./message-parse-2.js";
+import { imageRegex, MessageParser, MessageType } from "./message-parse-2.js";
 import { NeetsVoice, neetsVoices } from "./neets-voices.js";
 import { SettingsStore } from "./settings.js";
 import { TTSClient } from "./ttsClient.js";
@@ -17,6 +17,14 @@ const url = new URL(window.location.href);
 const params = url.searchParams;
 
 const settings = SettingsStore.getInstance();
+
+const imgurClientID = import.meta.env.VITE_API_IMGUR_CLIENT_ID;
+
+if (!imgurClientID) {
+  throw new Error(
+    "missing imgur client ID get it here: https://api.imgur.com/oauth2/addclient"
+  );
+}
 
 if (params.has("roomID")) {
   params.set("roomId", params.get("roomID")!);
@@ -72,7 +80,7 @@ await kickMs.start(roomsID);
 const videoClient = new VideoClient(settings);
 videoClient.start();
 
-const imageClient = new ImageClient();
+const imageClient = new ImageClient(imgurClientID);
 imageClient.start();
 
 const authorizer = new Authorizer(settings);
@@ -306,12 +314,17 @@ for await (const message of kickMs.queue) {
         case MessageType.image: {
           const { url } = segment;
 
-          imageClient.enqueue({
-            url,
-            duration: 5000,
-            messageIndex: 0,
-            segmentIndex: 0,
-          });
+          const matches = url.match(imageRegex);
+
+          if (matches) {
+            imageClient.enqueue({
+              matches,
+              duration: 5000,
+              messageIndex: 0,
+              segmentIndex: 0,
+            });
+          }
+
           break;
         }
 
