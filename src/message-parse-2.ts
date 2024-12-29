@@ -1,3 +1,5 @@
+type ConstructorFunction = new (...args: any[]) => any;
+
 type StateHandler = {
   onEnter?: (token: string) => void;
   onExit?: () => void;
@@ -449,27 +451,30 @@ export class MessageParser {
     },
     ban: {
       onToken: (token: string) => {
-        this.buffer.push(token);
+        if (!isNaN(Number(token))) {
+          this.buffer.push(Number(token));
+        } else {
+          this.buffer.push(token);
+        }
       },
       outputTransform: (buffer: typeof this.buffer) => {
-        const n = buffer.length;
         const output: MessageParseBanOutput[] = [];
 
-        for (let i = 0; i < n; i++) {
-          const curr: MessageParseBanOutput = {
-            type: MessageType.ban,
-            value: "",
-            expiration: -1,
-          };
+        for (const sequence of this.findSequences(buffer, [String, Number], {
+          optional: true,
+        })) {
+          const user = sequence[0];
+          const expiration = sequence[1];
 
-          curr.value = buffer[i] as string;
-
-          if (i < n - 1 && !isNaN(Number(buffer[i + 1]))) {
-            curr.expiration = Date.now() + parseInt(buffer[i + 1] as string);
-            i++;
+          if (!user) {
+            continue;
           }
 
-          output.push(curr);
+          output.push({
+            type: MessageType.ban,
+            value: user.toString(),
+            expiration: expiration?.valueOf(),
+          });
         }
 
         return output;
@@ -508,23 +513,29 @@ export class MessageParser {
     },
     addvoice: {
       onToken: (token: string) => {
-        const buffer = this.buffer as any[]; //Type is not important here
-        buffer.push(token);
-      },
-      shouldTransition: (buffer: typeof this.buffer) => {
-        return { shouldChange: buffer.length === 4, nextState: "idle" };
+        this.buffer.push(token);
       },
       outputTransform: (buffer: typeof this.buffer) => {
-        const [key, voiceName, platform, codeOrModel] = buffer as string[];
-        return [
-          {
-            type: MessageType.addVoice,
-            key,
-            voiceName,
-            platform: platform as "neets" | "gcloud" | "fish",
-            codeOrModel,
-          },
-        ];
+        for (const sequence of this.findSequences(buffer, [
+          String,
+          String,
+          String,
+          String,
+        ])) {
+          const [key, voiceName, platform, codeOrModel] = sequence;
+
+          return [
+            {
+              type: MessageType.addVoice,
+              key: key!.toString(),
+              voiceName: voiceName!.toString(),
+              platform: platform!.toString() as "neets" | "gcloud" | "fish",
+              codeOrModel: codeOrModel!.toString(),
+            },
+          ];
+        }
+
+        return [];
       },
       flushOnExit: true,
     },
@@ -532,41 +543,46 @@ export class MessageParser {
       onToken: (token: string) => {
         this.buffer.push(token);
       },
-      shouldTransition: (buffer: typeof this.buffer) => {
-        return { shouldChange: buffer.length === 1, nextState: "idle" };
-      },
       outputTransform: (buffer: typeof this.buffer) => {
-        const [key] = buffer as string[];
-        return [
-          {
-            type: MessageType.removeVoice,
-            key,
-          },
-        ];
+        for (const key of buffer) {
+          return [
+            {
+              type: MessageType.removeVoice,
+              key: key.toString(),
+            },
+          ];
+        }
+
+        return [];
       },
       flushOnExit: true,
     },
     addlimit: {
       onToken: (token: string) => {
-        this.buffer.push(token);
-      },
-      shouldTransition: (buffer: typeof this.buffer) => {
-        return { shouldChange: buffer.length === 3, nextState: "idle" };
+        if (!isNaN(Number(token))) {
+          this.buffer.push(Number(token));
+        } else {
+          this.buffer.push(token);
+        }
       },
       outputTransform: (buffer: typeof this.buffer) => {
-        if (buffer.length < 3) {
-          return [];
+        for (const sequence of this.findSequences(buffer, [
+          String,
+          Number,
+          Number,
+        ])) {
+          const [username, requests, period] = sequence;
+          return [
+            {
+              type: MessageType.addLimit,
+              username: username!.toString(),
+              period: period!.valueOf(),
+              requests: requests!.valueOf(),
+            },
+          ];
         }
 
-        const [username, requests, period] = buffer as string[];
-        return [
-          {
-            type: MessageType.addLimit,
-            username,
-            period: parseInt(period),
-            requests: parseInt(requests),
-          },
-        ];
+        return [];
       },
       flushOnExit: true,
     },
@@ -578,10 +594,6 @@ export class MessageParser {
         return { shouldChange: buffer.length === 1, nextState: "idle" };
       },
       outputTransform: (buffer: typeof this.buffer) => {
-        if (buffer.length < 1) {
-          return [];
-        }
-
         const [username] = buffer as string[];
         return [
           {
@@ -681,5 +693,65 @@ export class MessageParser {
       this.output.push(...transform(this.buffer));
     }
     this.buffer = [];
+  }
+
+  public *findSequences<
+    T extends any[],
+    U extends [ConstructorFunction, ...ConstructorFunction[]]
+  >(
+    array: T,
+    typeSequence: U,
+    options?: { optional?: boolean }
+  ): IterableIterator<{
+    [K in keyof U]: U[K] extends new (...args: any[]) => infer R
+      ? R | undefined
+      : never;
+  }> {
+    if (typeSequence.length === 0) {
+      return;
+    }
+
+    for (let i = 0; i < array.length; i++) {
+      const match: any[] = [];
+
+      for (
+        let j = 0;
+        j < Math.min(array.length, i + typeSequence.length);
+        j++
+      ) {
+        const currentElement = array[i + j];
+        const expectedType = typeSequence[j];
+
+        if (
+          !(
+            currentElement instanceof expectedType ||
+            typeof currentElement === expectedType.name.toLowerCase()
+          )
+        ) {
+          if (options?.optional) {
+            break;
+          } else {
+            match.length = 0;
+            break;
+          }
+        }
+
+        match.push(currentElement);
+      }
+
+      if (
+        match.length === typeSequence.length ||
+        (options?.optional && match.length)
+      ) {
+        yield match as [
+          ...{
+            [K in keyof U]: U[K] extends new (...args: any[]) => infer R
+              ? R | undefined
+              : never;
+          }
+        ];
+      }
+      i += Math.max(0, match.length - 1);
+    }
   }
 }

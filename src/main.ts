@@ -276,7 +276,7 @@ for await (const message of kickMs.queue) {
         }
 
         case MessageType.ban: {
-          const { value, expiration } = segment;
+          let { value, expiration } = segment;
 
           const user = authorizer.whoami(username);
           const target = authorizer.whoami(value);
@@ -284,6 +284,12 @@ for await (const message of kickMs.queue) {
           // prevent admins from banning each other
           if (target === Roles.Admin && user !== Roles.SuperAdmin) {
             continue;
+          }
+
+          expiration ??= -1;
+
+          if (expiration !== -1) {
+            expiration += Date.now();
           }
 
           settings.get("bans").set(value.toLowerCase(), { expiration });
