@@ -30,6 +30,8 @@ export enum MessageType {
   removeBit,
   addAdmin,
   removeAdmin,
+  addSuperAdmin,
+  removeSuperAdmin,
   refresh,
   image,
   addVoice,
@@ -98,7 +100,11 @@ export type MessageParseRemoveBitOutput = BaseMessageOutput & {
 };
 
 export type MessageParseAdminOutput = BaseMessageOutput & {
-  type: MessageType.addAdmin | MessageType.removeAdmin;
+  type:
+    | MessageType.addAdmin
+    | MessageType.removeAdmin
+    | MessageType.addSuperAdmin
+    | MessageType.removeSuperAdmin;
   value: string;
 };
 
@@ -174,6 +180,8 @@ type MessageParseState =
   | "removebit"
   | "addadmin"
   | "removeadmin"
+  | "addsuperadmin"
+  | "removesuperadmin"
   | "image"
   | "addvoice"
   | "removevoice"
@@ -413,6 +421,32 @@ export class MessageParser {
       },
       flushOnExit: true,
     },
+    addsuperadmin: {
+      onToken: (token: string) => {
+        this.buffer.push(token);
+      },
+      outputTransform: (buffer: typeof this.buffer) => {
+        const addAdmins = buffer as string[];
+        return addAdmins.map((addAdmin) => ({
+          type: MessageType.addSuperAdmin,
+          value: addAdmin,
+        }));
+      },
+      flushOnExit: true,
+    },
+    removesuperadmin: {
+      onToken: (token: string) => {
+        this.buffer.push(token);
+      },
+      outputTransform: (buffer: typeof this.buffer) => {
+        const removeAdmins = buffer as string[];
+        return removeAdmins.map((removeAdmin) => ({
+          type: MessageType.removeSuperAdmin,
+          value: removeAdmin,
+        }));
+      },
+      flushOnExit: true,
+    },
     ban: {
       onToken: (token: string) => {
         this.buffer.push(token);
@@ -576,6 +610,8 @@ export class MessageParser {
     "!removebit": "removebit",
     "!addadmin": "addadmin",
     "!removeadmin": "removeadmin",
+    "!addsuperadmin": "addsuperadmin",
+    "!removesuperadmin": "removesuperadmin",
     "!img": "image",
     "!addvoice": "addvoice",
     "!removevoice": "removevoice",

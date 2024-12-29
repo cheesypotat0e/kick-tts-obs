@@ -1,4 +1,4 @@
-import { Authorizer } from "./auth.js";
+import { Authorizer, Roles } from "./auth.js";
 import { BitsClient } from "./bitsClient.js";
 import { GCloudVoice, gcloudVoices } from "./gcloud-voices.js";
 import { Holler, MessageMap } from "./holler.js";
@@ -260,8 +260,32 @@ for await (const message of kickMs.queue) {
           settings.saveToLocalStorage();
           break;
         }
+
+        case MessageType.addSuperAdmin: {
+          const { value } = segment;
+          settings.get("superadmins").add(value.toLowerCase());
+          settings.saveToLocalStorage();
+          break;
+        }
+
+        case MessageType.removeSuperAdmin: {
+          const { value } = segment;
+          settings.get("superadmins").delete(value.toLowerCase());
+          settings.saveToLocalStorage();
+          break;
+        }
+
         case MessageType.ban: {
           const { value, expiration } = segment;
+
+          const user = authorizer.whoami(username);
+          const target = authorizer.whoami(value);
+
+          // prevent admins from banning each other
+          if (target === Roles.Admin && user !== Roles.SuperAdmin) {
+            continue;
+          }
+
           settings.get("bans").set(value.toLowerCase(), { expiration });
           settings.saveToLocalStorage();
           break;

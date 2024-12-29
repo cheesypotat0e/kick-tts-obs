@@ -1,7 +1,7 @@
 import { MessageType } from "./message-parse-2";
 import { SettingsStore } from "./settings";
 
-enum Roles {
+export enum Roles {
   User,
   Admin,
   SuperAdmin,
@@ -31,6 +31,8 @@ export class Authorizer {
     [MessageType.unban, Roles.Admin],
     [MessageType.addLimit, Roles.Admin],
     [MessageType.removeLimit, Roles.Admin],
+    [MessageType.addSuperAdmin, Roles.SuperAdmin],
+    [MessageType.removeSuperAdmin, Roles.SuperAdmin],
   ]);
 
   constructor(private settings: SettingsStore) {}
