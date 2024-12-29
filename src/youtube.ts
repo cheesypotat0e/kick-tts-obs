@@ -13,7 +13,11 @@ export class YoutubeVideoPlayer implements VideoPlayer {
   timeout?: ReturnType<typeof setTimeout>;
 
   play(id: string, options?: { volume: number }) {
-    let done = false;
+    this.timeout = setTimeout(async () => {
+      await this.clear();
+    }, 30 * 1000);
+
+    let started = false;
 
     this.state.player = YT("player", {
       height: "315",
@@ -44,22 +48,12 @@ export class YoutubeVideoPlayer implements VideoPlayer {
         const player = event.target as unknown as YouTubePlayer;
         const state = await player.getPlayerState();
 
-        if (state === PlayerStates.PLAYING && !done) {
-          this.timeout = setTimeout(async () => {
-            const state = await player.getPlayerState();
-            if (state !== PlayerStates.ENDED) {
-              await this.end();
-            }
-          }, 30 * 1000);
-
-          done = true;
+        if (state === PlayerStates.PLAYING && !started) {
+          started = true;
         }
 
         if (state === PlayerStates.ENDED) {
-          clearTimeout(this.timeout);
-          if (this.doneResolver) {
-            this.doneResolver();
-          }
+          await this.clear();
         }
       }
     });
@@ -67,6 +61,26 @@ export class YoutubeVideoPlayer implements VideoPlayer {
     this.state.player.on("error", (event) => {
       console.error(event);
     });
+  }
+
+  public async skip() {
+    await this.clear();
+  }
+
+  public async done() {
+    const state = await this.state.player?.getPlayerState();
+
+    if (
+      this.state.player &&
+      state !== PlayerStates.ENDED &&
+      this.doneResolver
+    ) {
+      await new Promise<void>((res) => {
+        this.doneResolver = res;
+      });
+    }
+
+    await this.clear();
   }
 
   public async end() {
@@ -79,19 +93,15 @@ export class YoutubeVideoPlayer implements VideoPlayer {
     }
   }
 
-  public async skip() {
-    await this.end();
-  }
-
-  public async done() {
-    const state = await this.state.player?.getPlayerState();
-
-    if (state !== PlayerStates.ENDED) {
-      await new Promise<void>((res) => {
-        this.doneResolver = res;
-      });
+  public async clear() {
+    if (this.doneResolver) {
+      this.doneResolver();
     }
 
+    clearTimeout(this.timeout);
+
     await this.state.player?.destroy();
+
+    this.state.player = undefined;
   }
 }
