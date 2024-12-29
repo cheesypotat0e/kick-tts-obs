@@ -29,6 +29,7 @@ export class StreamablePlayer implements VideoPlayer {
     video.height = 315;
     video.width = 560;
     video.volume = vol;
+    video.autoplay = true;
 
     video.src = await this.getURL(id);
 
@@ -39,30 +40,25 @@ export class StreamablePlayer implements VideoPlayer {
     }, 30 * 1000);
   }
 
-  done(): Promise<void> {
+  public async done(): Promise<void> {
     if (!this.ended) {
       return new Promise<void>((res) => {
         this.endedResolver = res;
       });
     }
-
-    return Promise.resolve();
   }
 
-  end() {
+  public async end() {
     if (this.video) {
       this.video.currentTime = this.video.duration;
       this.video.pause();
     }
 
     this.ended = true;
-
-    return Promise.resolve();
   }
 
   private newVideo() {
     const video = document.createElement("video");
-    video.autoplay = true;
     document.body.appendChild(video);
     video.addEventListener("ended", () => {
       this.ended = true;

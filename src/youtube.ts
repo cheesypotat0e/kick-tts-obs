@@ -70,11 +70,7 @@ export class YoutubeVideoPlayer implements VideoPlayer {
   public async done() {
     const state = await this.state.player?.getPlayerState();
 
-    if (
-      this.state.player &&
-      state !== PlayerStates.ENDED &&
-      this.doneResolver
-    ) {
+    if (this.state.player && state !== PlayerStates.ENDED) {
       await new Promise<void>((res) => {
         this.doneResolver = res;
       });
