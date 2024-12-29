@@ -12,6 +12,7 @@ globSync("src/lambda/**/index.ts").forEach(async (file) => {
 
   await esbuild.build({
     platform: "node",
+    format: "cjs",
     entryPoints: [file],
     bundle: true,
     outfile: output,

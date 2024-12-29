@@ -1,8 +1,4 @@
-import {
-  APIGatewayProxyEvent,
-  APIGatewayProxyResult,
-  Handler,
-} from "aws-lambda";
+import express, { Router } from "express";
 import {
   DynamoDBClient,
   GetItemCommand,
@@ -11,6 +7,9 @@ import {
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import { v4 } from "uuid";
 import joi from "joi";
+import cors from "cors";
+import { json, urlencoded } from "body-parser";
+import createServerless from "@codegenie/serverless-express";
 
 const tableName = process.env.BITS_TABLE_NAME;
 
@@ -43,77 +42,65 @@ const bitSchema = joi
   })
   .unknown(false);
 
-const makeResponse = (
-  statusCode: number,
-  body: object
-): APIGatewayProxyResult => ({
-  statusCode,
-  body: JSON.stringify(body),
-  headers: {
-    "Access-Control-Allow-Origin": "*",
-  },
+const router = Router();
+
+const app = express();
+router.use(cors());
+router.use(json());
+router.use(urlencoded({ extended: true }));
+
+router.get("/:id", async (req, res) => {
+  const client = new DynamoDBClient();
+  const id = req.params.id;
+
+  const cmd = new GetItemCommand({
+    TableName: tableName,
+    Key: marshall({ id }),
+  });
+
+  try {
+    const resDb = await client.send(cmd);
+    const item = resDb.Item;
+    if (!item) {
+      res.status(404).json({ message: "bit not found" });
+      return;
+    }
+    res.json({ bit: unmarshall(item) as Bit });
+    return;
+  } catch (error) {
+    console.error("Error getting bit:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+    return;
+  }
 });
 
-export const handler: Handler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
-  console.debug("EVENT: ", event);
-
-  const httpMethod = event.httpMethod;
+router.post("/", async (req, res) => {
   const client = new DynamoDBClient();
+  const bit: PostBitRequest = req.body;
+  const { error } = bitSchema.validate(bit);
 
-  if (httpMethod === "GET") {
-    const params = event.pathParameters;
-    if (!params?.id) {
-      return makeResponse(400, { message: "missing id parameter" });
-    }
-
-    const cmd = new GetItemCommand({
-      TableName: tableName,
-      Key: marshall({ id: params.id }),
-    });
-
-    try {
-      const res = await client.send(cmd);
-      const item = res.Item;
-      if (!item) {
-        return makeResponse(404, { message: "bit not found" });
-      }
-      return makeResponse(200, { bit: unmarshall(item) as Bit });
-    } catch (error) {
-      console.error("Error getting bit:", error);
-      return makeResponse(500, { message: "Internal Server Error" });
-    }
-  } else if (httpMethod === "POST") {
-    if (!event.body) {
-      return makeResponse(400, { message: "missing body" });
-    }
-
-    try {
-      const bit: PostBitRequest = JSON.parse(event.body);
-      const { error } = bitSchema.validate(bit);
-
-      if (error) {
-        return makeResponse(400, { message: `Invalid bit: ${error.message}` });
-      }
-
-      const id = v4();
-      const params = {
-        TableName: tableName,
-        Item: marshall({ id, ...bit }),
-      };
-
-      await client.send(new PutItemCommand(params));
-
-      return makeResponse(201, {
-        message: "bit created",
-        id,
-      } as PostBitResponse);
-    } catch (error) {
-      console.error("Error creating bit:", error);
-      return makeResponse(500, { message: "Internal Server Error" });
-    }
-  } else {
-    return makeResponse(405, { message: "Method Not Allowed" });
+  if (error) {
+    res.status(400).json({ message: `Invalid bit: ${error.message}` });
+    return;
   }
-};
+
+  const id = v4();
+  const params = {
+    TableName: tableName,
+    Item: marshall({ id, ...bit }),
+  };
+
+  try {
+    await client.send(new PutItemCommand(params));
+    res.status(201).json({ message: "bit created", id });
+    return;
+  } catch (error) {
+    console.error("Error creating bit:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+    return;
+  }
+});
+
+app.use("/bits", router);
+
+export const handler = createServerless({ app });
