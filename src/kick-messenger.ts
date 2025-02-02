@@ -65,6 +65,13 @@ export class KickMessenger extends Messenger {
         eventData.data = JSON.parse(eventData.data);
         const message = data.data.content;
         const senderUsername = data.data.sender.slug;
+        const isSub = data.data.sender.identity.badges.find(
+          (badge) =>
+            badge.type === "subscriber" ||
+            badge.type === "og" ||
+            badge.type === "founder" ||
+            badge.type === "moderator"
+        );
 
         // parse the message
 
@@ -73,6 +80,7 @@ export class KickMessenger extends Messenger {
         this.pushToQueue({
           text: message,
           username: senderUsername,
+          isSub: !!isSub,
           tokens,
         });
       } else if (data.event === "pusher:error") {

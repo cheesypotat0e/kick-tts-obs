@@ -6,6 +6,7 @@ export type Message = {
   text: string;
   username: string;
   tokens: string[];
+  isSub: boolean;
 };
 
 export class Messenger {

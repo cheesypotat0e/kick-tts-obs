@@ -129,6 +129,10 @@ for await (const message of kickMs.queue) {
         continue;
       }
 
+      if (settings.get("subOnly")) {
+        continue;
+      }
+
       rateLimiter.addRequest(username);
 
       switch (segment.type) {
@@ -360,6 +364,12 @@ for await (const message of kickMs.queue) {
           const { username } = segment;
           rateLimiter.removeRecord(username.toLowerCase());
           settings.get("rateLimits").delete(username);
+          settings.saveToLocalStorage();
+          break;
+        }
+        case MessageType.subonly: {
+          const currentSubOnly = settings.get("subOnly") ?? false;
+          settings.set("subOnly", !currentSubOnly);
           settings.saveToLocalStorage();
           break;
         }

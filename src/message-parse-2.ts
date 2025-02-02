@@ -42,6 +42,7 @@ export enum MessageType {
   unban,
   addLimit,
   removeLimit,
+  subonly,
 }
 
 export type BaseMessageOutput = {
@@ -151,6 +152,10 @@ export type MessageParseRemoveLimitOutput = BaseMessageOutput & {
   username: string;
 };
 
+export type MessageParseSubOnlyOutput = BaseMessageOutput & {
+  type: MessageType.subonly;
+};
+
 export type MessageParseOutput =
   | MessageParseTTSOutput
   | MessageParseBitOutput
@@ -169,7 +174,8 @@ export type MessageParseOutput =
   | MessageParseBanOutput
   | MessageParseUnbanOutput
   | MessageParseAddLimitOutput
-  | MessageParseRemoveLimitOutput;
+  | MessageParseRemoveLimitOutput
+  | MessageParseSubOnlyOutput;
 
 type MessageParseState =
   | "idle"
@@ -190,7 +196,8 @@ type MessageParseState =
   | "ban"
   | "unban"
   | "addlimit"
-  | "removelimit";
+  | "removelimit"
+  | "subonly";
 
 export type TTSSegment = {
   text: string[];
@@ -241,6 +248,10 @@ export class MessageParser {
 
         if (token === "!cfgclear") {
           this.buffer.push(MessageType.clearConfig);
+        }
+
+        if (token === "!subonly") {
+          this.buffer.push(MessageType.subonly);
         }
       },
       outputTransform: (buffer: typeof this.buffer) => {
@@ -605,6 +616,23 @@ export class MessageParser {
       },
       flushOnExit: true,
     },
+    subonly: {
+      onToken: (token: string) => {
+        if (token === "!subonly") {
+          this.buffer.push(MessageType.subonly);
+        }
+      },
+      outputTransform: (buffer: typeof this.buffer) => {
+        const tokens = buffer as number[];
+        return tokens.map((token) => {
+          return {
+            type: token,
+          };
+        });
+      },
+      flushOnExit: true,
+      shouldHandleTrigger: true,
+    },
   };
 
   private triggers: Record<string, MessageParseState> = {
@@ -632,6 +660,7 @@ export class MessageParser {
     "!unban": "unban",
     "!addlimit": "addlimit",
     "!removelimit": "removelimit",
+    "!subonly": "idle",
   };
 
   private currentTrigger: string = "";
