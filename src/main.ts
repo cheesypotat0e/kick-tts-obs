@@ -99,7 +99,7 @@ for await (const message of kickMs.queue) {
     messageIndex = (messageIndex + 1) % (1e9 + 7);
     let segmentIndex = 0;
 
-    const { username, tokens } = message;
+    const { username, tokens, isSub } = message;
 
     if (isBanned(username)) {
       continue;
@@ -129,7 +129,7 @@ for await (const message of kickMs.queue) {
         continue;
       }
 
-      if (settings.get("subOnly")) {
+      if (settings.get("subOnly") && !isSub) {
         continue;
       }
 

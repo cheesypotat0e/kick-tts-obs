@@ -33,7 +33,7 @@ export class Authorizer {
     [MessageType.removeLimit, Roles.Admin],
     [MessageType.addSuperAdmin, Roles.SuperAdmin],
     [MessageType.removeSuperAdmin, Roles.SuperAdmin],
-    [MessageType.subonly, Roles.admin],
+    [MessageType.subonly, Roles.Admin],
   ]);
 
   constructor(private settings: SettingsStore) {}
