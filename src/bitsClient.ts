@@ -33,7 +33,9 @@ export class BitsClient {
       const { url, vol } = bits.get(bitID)!;
 
       const rate = this.settings.get("bitsRate");
-      const volume = Math.min(vol, 1.0) ?? this.settings.get("bitsVolume");
+      let volume = Math.min(vol, 1.0) ?? this.settings.get("bitsVolume");
+
+      volume *= this.settings.get("bitsVolume");
 
       this.state.bitsQueue.enqueue({
         url,
