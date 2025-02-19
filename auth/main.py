@@ -53,6 +53,12 @@ def generate_code(request):
 
     try:
         jwt.decode(token, PUBLIC_KEY, algorithms=["RS256"])
+    except jwt.InvalidSignatureError:
+        return (
+            {"error": "Invalid signature"},
+            401,
+            {"Access-Control-Allow-Origin": "*"},
+        )
     except jwt.InvalidTokenError:
         return ({"error": "Invalid token"}, 401, {"Access-Control-Allow-Origin": "*"})
 
