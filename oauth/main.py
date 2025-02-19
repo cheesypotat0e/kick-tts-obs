@@ -38,14 +38,11 @@ def oauth_callback(request):
     global code_verifier
     code = request.args.get("code")
     state = request.args.get("state")
-    token = request.args.get("token")
 
     print(f"Received code: {code}")
     print(f"Received state: {state}")
-    print(f"Received token: {token}")
 
     if code and state:
-
         response = requests.post(
             "https://id.kick.com/oauth/token",
             data={
@@ -71,8 +68,15 @@ def oauth_callback(request):
             "expiry": expiry,
             "scope": scope,
         }, 200
+    else:
+        return {"error": "No code received"}, 400
 
-    elif token:
+
+@app.route("/", methods=["GET"])
+def root():
+    token = request.args.get("token")
+
+    if token:
         response = requests.post(
             "https://id.kick.com/oauth/token",
             data={
@@ -98,7 +102,7 @@ def oauth_callback(request):
             "expiry": expiry,
             "scope": scope,
         }, 200
-    elif not request.args:
+    else:
         code_verifier = generate_code_verifier()
         code_challenge = generate_code_challenge(code_verifier)
 
@@ -113,8 +117,6 @@ def oauth_callback(request):
             "state": secrets.token_urlsafe(32),
         }
         return redirect(auth_url + "?" + urlencode(params)), 302
-    else:
-        return {"error": "No code or token received"}, 400
 
 
 if __name__ == "__main__":
