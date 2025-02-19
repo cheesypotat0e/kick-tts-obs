@@ -29,6 +29,12 @@ def auth_handler(request):
     if path == "/code":
         return generate_code(request)
     elif path == "/token":
+        if request.method != "POST":
+            return (
+                {"error": "Method not allowed"},
+                405,
+                {"Access-Control-Allow-Origin": "*"},
+            )
         return verify_code(request)
     return ("Not Found", 404)
 

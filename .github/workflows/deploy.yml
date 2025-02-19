@@ -64,6 +64,17 @@ jobs:
             --trigger-http \
             --allow-unauthenticated \
 
+      - name: Deploy to Cloud Functions
+        run: |
+          gcloud functions deploy kick-auth \
+            --gen2 \
+            --runtime=python310 \
+            --region=us-west1 \
+            --source=./auth \
+            --entry-point=auth_handler \
+            --trigger-http \
+            --allow-unauthenticated \
+
       - name: Run Build
         run: |
           pnpm run build
