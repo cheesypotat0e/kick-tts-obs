@@ -192,5 +192,4 @@ def root(request):
         return redirect(
             auth_url + "?" + urlencode(params),
             code=302,
-            headers={"Access-Control-Allow-Origin": "*"},
         )
