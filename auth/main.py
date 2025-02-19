@@ -5,6 +5,7 @@ from datetime import datetime
 import functions_framework
 import jwt
 from google.cloud import firestore
+from jwt.exceptions import InvalidSignatureError, InvalidTokenError
 
 # Initialize Firestore client
 db = firestore.Client()
@@ -53,13 +54,13 @@ def generate_code(request):
 
     try:
         jwt.decode(token, PUBLIC_KEY, algorithms=["RS256"])
-    except jwt.exceptions.InvalidSignatureError:
+    except InvalidSignatureError:
         return (
             {"error": "Invalid signature"},
             401,
             {"Access-Control-Allow-Origin": "*"},
         )
-    except jwt.exceptions.InvalidTokenError:
+    except InvalidTokenError:
         return ({"error": "Invalid token"}, 401, {"Access-Control-Allow-Origin": "*"})
 
     code = secrets.token_hex(32)
