@@ -76,7 +76,7 @@ def oauth_callback(request):
 
     response = requests.post(
         "https://api.kick.com/public/v1/token/introspect",
-        headers={"Authorization": "text"},
+        headers={"Authorization": "Bearer " + res.get("access_token")},
     )
     data = response.json()
 
