@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 
 import functions_framework
 import requests
+from Flask import redirect
 
 # Load environment variables
 CLIENT_ID = os.environ.get("KICK_CLIENT_ID")
@@ -30,6 +31,15 @@ def generate_code_challenge(code_verifier):
 
 @functions_framework.http
 def oauth_handler(request):
+    # Add CORS headers
+    if request.method == "OPTIONS":
+        headers = {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type",
+        }
+        return ("", 204, headers)
+
     path = request.path
     if path == "/callback":
         return oauth_callback(request)
@@ -41,11 +51,15 @@ def oauth_callback(request):
     state = request.args.get("state")
 
     if not code or not state:
-        return {"error": "No code received"}, 400
+        return {"error": "No code received"}, 400, {"Access-Control-Allow-Origin": "*"}
 
     code_verifier = code_verifier_store.pop(state, None)
     if not code_verifier:
-        return {"error": "Invalid state or expired session"}, 400
+        return (
+            {"error": "Invalid state or expired session"},
+            400,
+            {"Access-Control-Allow-Origin": "*"},
+        )
 
     response = requests.post(
         "https://id.kick.com/oauth/token",
@@ -60,12 +74,16 @@ def oauth_callback(request):
     )
     res = response.json()
 
-    return {
-        "access_token": res.get("access_token"),
-        "refresh_token": res.get("refresh_token"),
-        "expiry": res.get("expires_in"),
-        "scope": res.get("scope"),
-    }, 200
+    return (
+        {
+            "access_token": res.get("access_token"),
+            "refresh_token": res.get("refresh_token"),
+            "expiry": res.get("expires_in"),
+            "scope": res.get("scope"),
+        },
+        200,
+        {"Access-Control-Allow-Origin": "*"},
+    )
 
 
 def root(request):
@@ -82,13 +100,17 @@ def root(request):
             },
         )
         res = response.json()
-        return {
-            "access_token": res.get("access_token"),
-            "token_type": res.get("token_type"),
-            "refresh_token": res.get("refresh_token"),
-            "expiry": res.get("expires_in"),
-            "scope": res.get("scope"),
-        }, 200
+        return (
+            {
+                "access_token": res.get("access_token"),
+                "token_type": res.get("token_type"),
+                "refresh_token": res.get("refresh_token"),
+                "expiry": res.get("expires_in"),
+                "scope": res.get("scope"),
+            },
+            200,
+            {"Access-Control-Allow-Origin": "*"},
+        )
     else:
         code_verifier = generate_code_verifier()
         code_challenge = generate_code_challenge(code_verifier)
@@ -106,4 +128,8 @@ def root(request):
             "state": state,
         }
 
-        return redirect(auth_url + "?" + urlencode(params))
+        return redirect(
+            auth_url + "?" + urlencode(params),
+            code=302,
+            headers={"Access-Control-Allow-Origin": "*"},
+        )
