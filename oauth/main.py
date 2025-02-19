@@ -6,7 +6,7 @@ from urllib.parse import urlencode
 
 import functions_framework
 import requests
-from Flask import redirect
+from flask import redirect
 
 # Load environment variables
 CLIENT_ID = os.environ.get("KICK_CLIENT_ID")
