@@ -68,7 +68,8 @@ def generate_code(request):
     code = secrets.token_hex(32)
 
     codes_ref = db.collection("auth-codes")
-    codes_ref.add(
+
+    codes_ref.document(code).set(
         {
             "code": code,
             "created_at": datetime.now(),
@@ -93,17 +94,15 @@ def verify_code(request):
 
     # Query Firestore for code
     codes_ref = db.collection("auth-codes")
-    query = codes_ref.where("code", "==", code).where("used", "==", False).limit(1)
-    docs = query.get()
+    doc = codes_ref.document(code).get()
 
-    if not docs:
+    if not doc or doc.get("used"):
         return (
             {"error": "Invalid or already used code"},
             400,
             {"Access-Control-Allow-Origin": "*"},
         )
 
-    doc = next(iter(docs))
     doc.reference.update({"used": True})
 
     user_id = doc.get("user_id")
