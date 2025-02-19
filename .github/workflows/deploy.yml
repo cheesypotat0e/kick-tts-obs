@@ -60,7 +60,7 @@ jobs:
             --runtime=python310 \
             --region=us-west1 \
             --source=./oauth \
-            --entry-point=oauth_callback \
+            --entry-point=oauth_handler \
             --trigger-http \
             --allow-unauthenticated \
 
