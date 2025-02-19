@@ -7,13 +7,12 @@ from urllib.parse import urlencode
 import functions_framework
 import requests
 from flask import redirect
+from google.cloud import firestore
 
 # Load environment variables
 CLIENT_ID = os.environ.get("KICK_CLIENT_ID")
 REDIRECT_URI = os.environ.get("KICK_REDIRECT_URI")
 CLIENT_SECRET = os.environ.get("KICK_CLIENT_SECRET")
-
-code_verifier_store = {}
 
 
 def generate_code_verifier():
@@ -53,13 +52,17 @@ def oauth_callback(request):
     if not code or not state:
         return {"error": "No code received"}, 400, {"Access-Control-Allow-Origin": "*"}
 
-    code_verifier = code_verifier_store.pop(state, None)
-    if not code_verifier:
+    db = firestore.Client()
+    doc = db.collection("code_verifiers").document(state).get()
+    if not doc.exists:
         return (
             {"error": "Invalid state or expired session"},
             400,
             {"Access-Control-Allow-Origin": "*"},
         )
+
+    code_verifier = doc.get("code_verifier")
+    db.collection("code_verifiers").document(state).delete()
 
     response = requests.post(
         "https://id.kick.com/oauth/token",
@@ -78,9 +81,10 @@ def oauth_callback(request):
         "https://api.kick.com/public/v1/token/introspect",
         headers={"Authorization": "Bearer " + res.get("access_token")},
     )
+
     data = response.json()
 
-    print(data)
+    user_id = data.get("user_id")
 
     access_token = res.get("access_token")
     refresh_token = res.get("refresh_token")
@@ -88,16 +92,17 @@ def oauth_callback(request):
     scope = res.get("scope")
 
     # Store tokens in Firestore
-    # db = firestore.Client()
-    # doc_ref = db.collection("users").document(user_id)
-    # doc_ref.set(
-    #     {
-    #         "access_token": access_token,
-    #         "refresh_token": refresh_token,
-    #         "expiry": expiry,
-    #         "scope": scope,
-    #     }
-    # )
+    db = firestore.Client()
+    doc_ref = db.collection("users").document(user_id)
+    doc_ref.set(
+        {
+            "user_id": user_id,
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "expiry": expiry,
+            "scope": scope,
+        }
+    )
 
     return (
         "Success",
@@ -135,7 +140,12 @@ def root(request):
         code_verifier = generate_code_verifier()
         code_challenge = generate_code_challenge(code_verifier)
         state = secrets.token_urlsafe(32)
-        code_verifier_store[state] = code_verifier  # Store verifier for later use
+
+        db = firestore.Client()
+
+        db.collection("code_verifiers").document(state).set(
+            {"code_verifier": code_verifier, "state": state}
+        )
 
         auth_url = "https://id.kick.com/oauth/authorize"
         params = {
