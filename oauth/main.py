@@ -34,7 +34,7 @@ def generate_code_challenge(code_verifier):
 
 
 @app.route("/callback", methods=["GET"])
-def oauth_callback():
+def oauth_callback(request):
     global code_verifier
     code = request.args.get("code")
     state = request.args.get("state")
