@@ -84,6 +84,8 @@ def oauth_callback(request):
 
     data = response.json()
 
+    print(data)
+
     user_id = data.get("user_id")
 
     access_token = res.get("access_token")
@@ -125,6 +127,35 @@ def root(request):
             },
         )
         res = response.json()
+
+        response = requests.post(
+            "https://api.kick.com/public/v1/token/introspect",
+            headers={"Authorization": "Bearer " + res.get("access_token")},
+        )
+
+        data = response.json()
+        print(data)
+
+        user_id = data.get("user_id")
+
+        access_token = res.get("access_token")
+        refresh_token = res.get("refresh_token")
+        expiry = res.get("expires_in")
+        scope = res.get("scope")
+
+        # Store tokens in Firestore
+        db = firestore.Client()
+        doc_ref = db.collection("users").document(user_id)
+        doc_ref.set(
+            {
+                "user_id": user_id,
+                "access_token": access_token,
+                "refresh_token": refresh_token,
+                "expiry": expiry,
+                "scope": scope,
+            }
+        )
+
         return (
             {
                 "access_token": res.get("access_token"),

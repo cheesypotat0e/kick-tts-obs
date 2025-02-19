@@ -27,6 +27,7 @@ def auth_handler(request):
         return ("", 204, headers)
 
     path = request.path
+
     if path == "/code":
         return generate_code(request)
     elif path == "/token":
@@ -53,7 +54,8 @@ def generate_code(request):
     token = auth_header.split(" ")[1]
 
     try:
-        jwt.decode(token, PUBLIC_KEY, algorithms=["RS256"])
+        decoded_token = jwt.decode(token, PUBLIC_KEY, algorithms=["RS256"])
+        user_id = decoded_token.get("sub")
     except InvalidSignatureError:
         return (
             {"error": "Invalid signature"},
@@ -66,7 +68,14 @@ def generate_code(request):
     code = secrets.token_hex(32)
 
     codes_ref = db.collection("auth-codes")
-    codes_ref.add({"code": code, "created_at": datetime.now(), "used": False})
+    codes_ref.add(
+        {
+            "code": code,
+            "created_at": datetime.now(),
+            "used": False,
+            "user_id": user_id,
+        }
+    )
 
     return ({"code": code}, 200, {"Access-Control-Allow-Origin": "*"})
 
@@ -97,11 +106,28 @@ def verify_code(request):
     doc = next(iter(docs))
     doc.reference.update({"used": True})
 
-    payload = {
-        "iat": datetime.now(),
-        "sub": "user",
-    }
+    user_id = doc.get("user_id")
 
-    token = jwt.encode(payload, PRIVATE_KEY, algorithm="RS256")
+    doc_ref = db.collection("users").document(user_id)
+    doc = doc_ref.get()
 
-    return ({"token": token}, 200, {"Access-Control-Allow-Origin": "*"})
+    if not doc.exists:
+        return ({"error": "User not found"}, 400, {"Access-Control-Allow-Origin": "*"})
+
+    access_token = doc.get("access_token")
+    refresh_token = doc.get("refresh_token")
+    expiry = doc.get("expiry")
+    scope = doc.get("scope")
+
+    return (
+        {
+            "token": {
+                "access_token": access_token,
+                "refresh_token": refresh_token,
+                "expiry": expiry,
+                "scope": scope,
+            }
+        },
+        200,
+        {"Access-Control-Allow-Origin": "*"},
+    )
