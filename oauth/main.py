@@ -77,16 +77,14 @@ def oauth_callback(request):
     )
     res = response.json()
 
-    response = requests.post(
-        "https://api.kick.com/public/v1/token/introspect",
+    response = requests.get(
+        "https://api.kick.com/public/v1/users",
         headers={"Authorization": "Bearer " + res.get("access_token")},
     )
 
     data = response.json()
 
-    print(data)
-
-    user_id = data.get("user_id")
+    user_id = data.get("data").get("user_id")
 
     access_token = res.get("access_token")
     refresh_token = res.get("refresh_token")
