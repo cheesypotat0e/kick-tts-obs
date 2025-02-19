@@ -4,8 +4,8 @@ import os
 import secrets
 from urllib.parse import urlencode
 
+import functions_framework
 import requests
-from google.cloud import functions_framework
 
 # Load environment variables
 CLIENT_ID = os.environ.get("KICK_CLIENT_ID")
