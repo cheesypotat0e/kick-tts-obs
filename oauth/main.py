@@ -105,4 +105,5 @@ def root(request):
             "code_challenge_method": "S256",
             "state": state,
         }
-        return {"auth_url": auth_url + "?" + urlencode(params)}, 302
+
+        return redirect(auth_url + "?" + urlencode(params))
