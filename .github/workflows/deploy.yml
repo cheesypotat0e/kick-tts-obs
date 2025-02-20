@@ -85,16 +85,8 @@ jobs:
           pnpm run build
         env:
           VITE_API_IMGUR_CLIENT_ID: ${{ vars.VITE_API_IMGUR_CLIENT_ID }}
-          VITE_AUTH_URL: ${{ vars.VITE_AUTH_URL }}
-
-      - name: Build login page
-        working-directory: ./login
-        run: |
-          pnpm install
-          pnpm run build
-        env:
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
-          VITE_REDIRECT_URL: ${{ vars.VITE_REDIRECT_URL }}
+          VITE_AUTH_URL: ${{ vars.VITE_AUTH_URL }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -107,8 +99,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-      - name: Echo deployment URLs
-        run: |
-          echo "Main app deployed to: ${{ steps.deployment.outputs.page_url }}"
-          echo "Login page deployed to: ${{ steps.login-deployment.outputs.page_url }}"
