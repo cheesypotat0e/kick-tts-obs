@@ -67,7 +67,7 @@ def generate_code(request):
             {"Access-Control-Allow-Origin": "*"},
         )
 
-    user_id = request.query_params.get("user_id")
+    user_id = request.args.get("user_id")
 
     if not user_id:
         return (
