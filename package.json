@@ -11,6 +11,7 @@
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.712.0",
     "@aws-sdk/util-dynamodb": "^3.712.0",
+    "@clerk/clerk-js": "^5.53.0",
     "howler": "^2.2.4",
     "i": "^0.3.7",
     "npm": "^10.9.0",

@@ -1,7 +1,7 @@
 import { Clerk } from "@clerk/clerk-js";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-const redirectUrl = import.meta.env.VITE_REDIRECT_URL;
+const authUrl = import.meta.env.VITE_AUTH_URL;
 
 if (!clerkPubKey) {
   throw new Error("Missing Clerk Publishable Key");
@@ -27,7 +27,7 @@ clerk.addListener(async ({ user }) => {
     }
 
     const token = await clerk.session?.getToken();
-    const response = await fetch(`${redirectUrl}?user_id=${userId}`, {
+    const response = await fetch(`${authUrl}/code?user_id=${userId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -55,7 +55,10 @@ clerk.addListener(async ({ user }) => {
 });
 
 try {
-  await clerk.load();
+  await clerk.load({
+    signInForceRedirectUrl: window.location.href,
+    signUpForceRedirectUrl: window.location.href,
+  });
 
   if (clerk.user) {
     document.getElementById("app")!.innerHTML = `
@@ -72,7 +75,7 @@ try {
     const token = await clerk.session?.getToken();
     const params = new URLSearchParams(window.location.search);
     const user_id = params.get("user_id");
-    const response = await fetch(`${redirectUrl}?user_id=${user_id}`, {
+    const response = await fetch(`${authUrl}/code?user_id=${user_id}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
