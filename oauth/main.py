@@ -48,7 +48,7 @@ def oauth_handler(request):
             response.headers["Access-Control-Allow-Headers"] = (
                 "Content-Type, Authorization"
             )
-            response.status_code = 204
+            response.status_code = 200
             return response
 
     @app.route("/callback", methods=["GET"])

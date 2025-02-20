@@ -33,14 +33,16 @@ def auth_handler(request):
     # Handle CORS preflight requests
     @app.before_request
     def handle_preflight():
+        print("before request")
         if request.method == "OPTIONS":
+            print("preflight")
             response = app.make_response("")
             response.headers["Access-Control-Allow-Origin"] = "*"
             response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
             response.headers["Access-Control-Allow-Headers"] = (
                 "Content-Type, Authorization"
             )
-            response.status_code = 204
+            response.status_code = 200
             return response
 
     @app.route("/code", methods=["GET"])
