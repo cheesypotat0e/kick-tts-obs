@@ -1,9 +1,11 @@
 import os
 import secrets
 from datetime import datetime
+from functools import wraps
 
 import functions_framework
 from clerk_backend_api import AuthenticateRequestOptions, Clerk
+from flask import Flask
 from google.cloud import firestore
 
 # Initialize Firestore client
@@ -20,28 +22,32 @@ clerk = Clerk(
 
 @functions_framework.http
 def auth_handler(request):
-    # Add CORS headers
-    if request.method == "OPTIONS":
-        headers = {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        }
-        return ("", 204, headers)
+    app = Flask(__name__)
 
-    path = request.path
+    # CORS middleware to add headers to every response
+    @app.after_request
+    def add_cors_headers(response):
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        return response
 
-    if path == "/code":
+    # Handle CORS preflight requests
+    @app.before_request
+    def handle_preflight():
+        if request.method == "OPTIONS":
+            response = app.make_response("")
+            response.status_code = 204
+            return response
+
+    @app.route("/code", methods=["GET"])
+    def code_route():
         return generate_code(request)
-    elif path == "/token":
-        if request.method != "POST":
-            return (
-                {"error": "Method not allowed"},
-                405,
-                {"Access-Control-Allow-Origin": "*"},
-            )
+
+    @app.route("/token", methods=["POST"])
+    def token_route():
         return verify_code(request)
-    return ("Not Found", 404)
+
+    # Handle the request using the Flask app
+    return app.handle_request(request)
 
 
 def generate_code(request):
@@ -118,16 +124,15 @@ def verify_code(request):
 
     user_id = doc.get("user_id")
 
-    doc_ref = db.collection("users").document(user_id)
-    doc = doc_ref.get()
+    user = db.collection("users").document(str(user_id)).get()
 
-    if not doc.exists:
+    if not user.exists:
         return ({"error": "User not found"}, 400, {"Access-Control-Allow-Origin": "*"})
 
-    access_token = doc.get("access_token")
-    refresh_token = doc.get("refresh_token")
-    expiry = doc.get("expiry")
-    scope = doc.get("scope")
+    access_token = user.get("access_token")
+    refresh_token = user.get("refresh_token")
+    expiry = user.get("expiry")
+    scope = user.get("scope")
 
     return (
         {
