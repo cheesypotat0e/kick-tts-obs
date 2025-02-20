@@ -3,7 +3,7 @@ import secrets
 from datetime import datetime
 
 import functions_framework
-from clerk_backend_api import Clerk
+from clerk_backend_api import AuthenticateRequestOptions, Clerk
 from google.cloud import firestore
 
 # Initialize Firestore client
@@ -55,7 +55,10 @@ def generate_code(request):
             {"Access-Control-Allow-Origin": "*"},
         )
 
-    res = clerk.authenticate_request(request)
+    res = clerk.authenticate_request(
+        request,
+        AuthenticateRequestOptions(),
+    )
 
     if not res.is_signed_in:
         return (
