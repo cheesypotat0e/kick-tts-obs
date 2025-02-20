@@ -110,8 +110,11 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
+          name: login
           path: "./login/dist"
 
       - name: Deploy to GitHub Pages
         id: login-deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: login
