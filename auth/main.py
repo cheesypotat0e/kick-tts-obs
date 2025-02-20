@@ -47,7 +47,7 @@ def auth_handler(request):
         return verify_code(request)
 
     # Handle the request using the Flask app
-    return app.handle_request(request)
+    return app(request.environ, lambda x, y: None)
 
 
 def generate_code(request):
