@@ -6,7 +6,7 @@ from urllib.parse import urlencode
 
 import functions_framework
 import requests
-from flask import redirect
+from flask import Flask, redirect
 from google.cloud import firestore
 
 # Load environment variables
@@ -30,19 +30,37 @@ def generate_code_challenge(code_verifier):
 
 @functions_framework.http
 def oauth_handler(request):
-    # Add CORS headers
-    if request.method == "OPTIONS":
-        headers = {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type",
-        }
-        return ("", 204, headers)
+    app = Flask(__name__)
 
-    path = request.path
-    if path == "/callback":
+    # CORS middleware to add headers to every response
+    @app.after_request
+    def add_cors_headers(response):
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        return response
+
+    # Handle CORS preflight requests
+    @app.before_request
+    def handle_preflight():
+        if request.method == "OPTIONS":
+            response = app.make_response("")
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = (
+                "Content-Type, Authorization"
+            )
+            response.status_code = 204
+            return response
+
+    @app.route("/callback", methods=["GET"])
+    def callback_route():
         return oauth_callback(request)
-    return root(request)
+
+    @app.route("/", methods=["GET"])
+    def root_route():
+        return root(request)
+
+    # Handle the request using the Flask app
+    return app.handle_request(request)
 
 
 def oauth_callback(request):
