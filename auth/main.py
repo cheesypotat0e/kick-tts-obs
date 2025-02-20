@@ -16,7 +16,7 @@ PRIVATE_KEY = os.environ.get("PRIVATE_KEY")
 PUBLIC_KEY = os.environ.get("PUBLIC_KEY")
 
 clerk = Clerk(
-    api_key=os.environ.get("CLERK_API_KEY"),
+    bearer_auth=os.environ.get("CLERK_SECRET_KEY"),
 )
 
 
