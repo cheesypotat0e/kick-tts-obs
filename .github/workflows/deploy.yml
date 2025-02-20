@@ -113,5 +113,5 @@ jobs:
           path: "./login/dist"
 
       - name: Deploy to GitHub Pages
-        id: deployment
+        id: login-deployment
         uses: actions/deploy-pages@v4
