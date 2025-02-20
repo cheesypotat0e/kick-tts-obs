@@ -151,7 +151,7 @@ def root(request):
 
         # Store tokens in Firestore
         db = firestore.Client()
-        doc_ref = db.collection("users").document(user_id)
+        doc_ref = db.collection("users").document(str(user_id))
         doc_ref.set(
             {
                 "user_id": user_id,
