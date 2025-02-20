@@ -22,9 +22,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-/scripts
-.env
-cdk.out
-
-venv/

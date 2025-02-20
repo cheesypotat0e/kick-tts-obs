@@ -126,9 +126,14 @@ def root(request):
         )
         res = response.json()
 
-        print(res)
+        response = requests.get(
+            "https://api.kick.com/public/v1/users",
+            headers={"Authorization": "Bearer " + res.get("access_token")},
+        )
 
-        user_id = res.get("user_id")
+        data = response.json()
+
+        user_id = data.get("data").get("user_id")
 
         access_token = res.get("access_token")
         refresh_token = res.get("refresh_token")

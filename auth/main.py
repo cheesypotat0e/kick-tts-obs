@@ -4,6 +4,7 @@ from datetime import datetime
 
 import functions_framework
 import jwt
+from clerk_backend_api import Clerk
 from google.cloud import firestore
 from jwt.exceptions import InvalidSignatureError, InvalidTokenError
 
@@ -13,6 +14,10 @@ db = firestore.Client()
 # Load environment variables
 PRIVATE_KEY = os.environ.get("PRIVATE_KEY")
 PUBLIC_KEY = os.environ.get("PUBLIC_KEY")
+
+clerk = Clerk(
+    api_key=os.environ.get("CLERK_API_KEY"),
+)
 
 
 @functions_framework.http
@@ -42,28 +47,29 @@ def auth_handler(request):
 
 
 def generate_code(request):
-    # Verify auth token from headers
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
+
+    auth_token = request.headers.get("Authorization")
+
+    if not auth_token or not auth_token.startswith("Bearer "):
         return (
             {"error": "Missing or invalid authorization header"},
             401,
             {"Access-Control-Allow-Origin": "*"},
         )
 
-    token = auth_header.split(" ")[1]
+    token = auth_token.split(" ")[1]
+    res = clerk.clients.verify(request={"token": token})
 
-    try:
-        decoded_token = jwt.decode(token, PUBLIC_KEY, algorithms=["RS256"])
-        user_id = decoded_token.get("sub")
-    except InvalidSignatureError:
+    assert res is not None
+
+    user_id = request.query_params.get("user_id")
+
+    if not user_id:
         return (
-            {"error": "Invalid signature"},
-            401,
+            {"error": "Missing user_id"},
+            400,
             {"Access-Control-Allow-Origin": "*"},
         )
-    except InvalidTokenError:
-        return ({"error": "Invalid token"}, 401, {"Access-Control-Allow-Origin": "*"})
 
     code = secrets.token_hex(32)
 

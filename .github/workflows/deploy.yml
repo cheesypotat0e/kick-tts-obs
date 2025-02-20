@@ -33,7 +33,6 @@ jobs:
         with:
           version: 9
           run_install: true
-
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
@@ -87,6 +86,15 @@ jobs:
         env:
           VITE_API_IMGUR_CLIENT_ID: ${{ vars.VITE_API_IMGUR_CLIENT_ID }}
 
+      - name: Build login page
+        working-directory: ./login
+        run: |
+          pnpm install
+          pnpm run build
+        env:
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+          VITE_REDIRECT_URL: ${{ var.VITE_REDIRECT_URL }}
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
@@ -94,6 +102,16 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: "./dist"
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "./login/dist"
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
