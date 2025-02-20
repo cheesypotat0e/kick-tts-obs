@@ -39,6 +39,7 @@ const getAuthCode = async () => {
             "user-id-input"
           ) as HTMLInputElement;
           resolve(input.value);
+          input.disabled = true;
         });
     });
   }
@@ -59,7 +60,7 @@ const getAuthCode = async () => {
         <div class="code">
           <h2>Your Authentication Code</h2>
           <pre>${code}</pre>
-          <p>Use this code to authenticate your application</p>
+          <p>Use the command <code>!code ${code}</code> to authenticate your Cheesy Bot</p>
         </div>
       </div>
     `;
