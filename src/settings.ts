@@ -22,6 +22,8 @@ Set.prototype.toJSON = function () {
 
 export type Settings = {
   roomId: string;
+  authToken?: string;
+  refreshToken?: string;
   admins: Set<string>;
   superadmins: Set<string>;
   ttsVolume: number;

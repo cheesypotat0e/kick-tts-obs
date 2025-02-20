@@ -43,6 +43,7 @@ export enum MessageType {
   addLimit,
   removeLimit,
   subonly,
+  code,
 }
 
 export type BaseMessageOutput = {
@@ -156,6 +157,11 @@ export type MessageParseSubOnlyOutput = BaseMessageOutput & {
   type: MessageType.subonly;
 };
 
+export type MessageParseCodeOutput = BaseMessageOutput & {
+  type: MessageType.code;
+  content: string;
+};
+
 export type MessageParseOutput =
   | MessageParseTTSOutput
   | MessageParseBitOutput
@@ -175,7 +181,8 @@ export type MessageParseOutput =
   | MessageParseUnbanOutput
   | MessageParseAddLimitOutput
   | MessageParseRemoveLimitOutput
-  | MessageParseSubOnlyOutput;
+  | MessageParseSubOnlyOutput
+  | MessageParseCodeOutput;
 
 type MessageParseState =
   | "idle"
@@ -197,7 +204,8 @@ type MessageParseState =
   | "unban"
   | "addlimit"
   | "removelimit"
-  | "subonly";
+  | "subonly"
+  | "code";
 
 export type TTSSegment = {
   text: string[];
@@ -633,6 +641,24 @@ export class MessageParser {
       flushOnExit: true,
       shouldHandleTrigger: true,
     },
+    code: {
+      onToken: (token: string) => {
+        this.buffer.push(token);
+      },
+      shouldTransition: (buffer: typeof this.buffer) => {
+        return { shouldChange: buffer.length === 1, nextState: "idle" };
+      },
+      outputTransform: (buffer: typeof this.buffer) => {
+        const [content] = buffer as string[];
+        return [
+          {
+            type: MessageType.code,
+            content,
+          },
+        ];
+      },
+      flushOnExit: true,
+    },
   };
 
   private triggers: Record<string, MessageParseState> = {
@@ -661,6 +687,7 @@ export class MessageParser {
     "!addlimit": "addlimit",
     "!removelimit": "removelimit",
     "!subonly": "idle",
+    "!code": "code",
   };
 
   private currentTrigger: string = "";

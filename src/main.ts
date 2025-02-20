@@ -19,6 +19,7 @@ const params = url.searchParams;
 const settings = SettingsStore.getInstance();
 
 const imgurClientID = import.meta.env.VITE_API_IMGUR_CLIENT_ID;
+const authUrl = import.meta.env.VITE_AUTH_URL;
 
 if (!imgurClientID) {
   throw new Error(
@@ -371,6 +372,28 @@ for await (const message of kickMs.queue) {
           const currentSubOnly = settings.get("subOnly") ?? false;
           settings.set("subOnly", !currentSubOnly);
           settings.saveToLocalStorage();
+          break;
+        }
+        case MessageType.code: {
+          const { content } = segment;
+
+          const res = await fetch(`${authUrl}/code`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ code: content }),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            const accessToken = data.token.access_token;
+            const refreshToken = data.token.refresh_token;
+
+            settings.set("authToken", accessToken);
+            settings.set("refreshToken", refreshToken);
+          }
+
           break;
         }
         default:
