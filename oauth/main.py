@@ -84,7 +84,7 @@ def oauth_callback(request):
 
     data = response.json()
 
-    user_id = data.get("data").get("user_id")
+    user_id = data[0].get("data").get("user_id")
 
     access_token = res.get("access_token")
     refresh_token = res.get("refresh_token")
