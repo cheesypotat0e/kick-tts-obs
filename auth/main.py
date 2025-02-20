@@ -22,42 +22,28 @@ clerk = Clerk(
 
 @functions_framework.http
 def auth_handler(request):
-    app = Flask(__name__)
 
-    # CORS middleware to add headers to every response
-    @app.after_request
-    def add_cors_headers(response):
-        response.headers.update({"Access-Control-Allow-Origin": "*"})
-        return response
+    if request.method == "OPTIONS":
+        return (
+            "",
+            200,
+            {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            },
+        )
 
-    # Handle CORS preflight requests
-    @app.before_request
-    def handle_preflight():
-        if request.method == "OPTIONS":
-            response = app.make_response("")
-            response.headers.update(
-                {
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-                    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-                    "Access-Control-Max-Age": "3600",
-                }
-            )
-
-            print(response.headers)
-
-            return response, 200
-
-    @app.route("/code", methods=["GET"])
-    def code_route():
+    if request.method == "GET" and request.path == "/code":
         return generate_code(request)
-
-    @app.route("/token", methods=["POST"])
-    def token_route():
+    elif request.method == "POST" and request.path == "/token":
         return verify_code(request)
-
-    # Handle the request using the Flask app
-    return app(request.environ, lambda x, y: None)
+    else:
+        return (
+            "",
+            404,
+            {"Access-Control-Allow-Origin": "*"},
+        )
 
 
 def generate_code(request):

@@ -30,37 +30,28 @@ def generate_code_challenge(code_verifier):
 
 @functions_framework.http
 def oauth_handler(request):
-    app = Flask(__name__)
 
-    # CORS middleware to add headers to every response
-    @app.after_request
-    def add_cors_headers(response):
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        return response
+    if request.method == "OPTIONS":
+        return (
+            "",
+            200,
+            {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            },
+        )
 
-    # Handle CORS preflight requests
-    @app.before_request
-    def handle_preflight():
-        if request.method == "OPTIONS":
-            response = app.make_response("")
-            response.headers["Access-Control-Allow-Origin"] = "*"
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-            response.headers["Access-Control-Allow-Headers"] = (
-                "Content-Type, Authorization"
-            )
-            response.status_code = 200
-            return response
-
-    @app.route("/callback", methods=["GET"])
-    def callback_route():
+    if request.method == "GET" and request.path == "/callback":
         return oauth_callback(request)
-
-    @app.route("/", methods=["GET"])
-    def root_route():
+    elif request.method == "GET" and request.path == "/":
         return root(request)
-
-    # Handle the request using the Flask app
-    return app.handle_request(request)
+    else:
+        return (
+            "",
+            404,
+            {"Access-Control-Allow-Origin": "*"},
+        )
 
 
 def oauth_callback(request):
