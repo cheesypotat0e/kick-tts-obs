@@ -3,7 +3,7 @@ import secrets
 from datetime import datetime
 
 import functions_framework
-from clerk_backend_api import Clerk
+from clerk_backend_api import AuthStatus, Clerk
 from google.cloud import firestore
 
 # Initialize Firestore client
@@ -55,10 +55,14 @@ def generate_code(request):
             {"Access-Control-Allow-Origin": "*"},
         )
 
-    print(auth_token)
-    res = clerk.clients.verify(request={"token": auth_token})
+    res = clerk.authenticate_request(request)
 
-    assert res is not None
+    if res.status != AuthStatus.SIGNED_IN:
+        return (
+            {"error": "Invalid or expired session"},
+            401,
+            {"Access-Control-Allow-Origin": "*"},
+        )
 
     user_id = request.query_params.get("user_id")
 
