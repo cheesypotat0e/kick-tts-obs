@@ -2,7 +2,6 @@ import { Clerk } from "@clerk/clerk-js";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const redirectUrl = import.meta.env.VITE_REDIRECT_URL;
-const tokenRedirectUrl = import.meta.env.VITE_TOKEN_REDIRECT_URL;
 
 if (!clerkPubKey) {
   throw new Error("Missing Clerk Publishable Key");
