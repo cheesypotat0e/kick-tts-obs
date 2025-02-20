@@ -43,6 +43,9 @@ def auth_handler(request):
                     "Access-Control-Max-Age": "3600",
                 }
             )
+
+            print(response.headers)
+
             return response, 200
 
     @app.route("/code", methods=["GET"])
