@@ -377,7 +377,7 @@ for await (const message of kickMs.queue) {
         case MessageType.code: {
           const { content } = segment;
 
-          const res = await fetch(`${authUrl}/code`, {
+          const res = await fetch(`${authUrl}/token`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
