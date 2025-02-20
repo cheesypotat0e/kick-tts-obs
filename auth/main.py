@@ -3,7 +3,7 @@ import secrets
 from datetime import datetime
 
 import functions_framework
-from clerk_backend_api import AuthStatus, Clerk
+from clerk_backend_api import Clerk
 from google.cloud import firestore
 
 # Initialize Firestore client
@@ -57,7 +57,7 @@ def generate_code(request):
 
     res = clerk.authenticate_request(request)
 
-    if res.status != AuthStatus.SIGNED_IN:
+    if not res.is_signed_in:
         return (
             {"error": "Invalid or expired session"},
             401,
