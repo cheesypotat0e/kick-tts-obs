@@ -119,5 +119,6 @@ jobs:
         uses: actions/deploy-pages@v4
         with:
           artifact_name: login
-        outputs:
-          page_url: ${{ steps.login-deployment.outputs.page_url }}
+
+    outputs:
+      login_url: ${{ steps.login-deployment.outputs.page_url }}
