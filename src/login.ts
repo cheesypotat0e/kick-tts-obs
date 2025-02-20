@@ -23,7 +23,7 @@ const getAuthCode = async () => {
 
   if (!userId) {
     // Prompt user for ID if not provided in URL and wait for submission
-    await new Promise<string>((resolve) => {
+    userId = await new Promise<string>((resolve) => {
       document.getElementById("app")!.innerHTML = `
         <div class="container">
           <h2>Enter User ID</h2>

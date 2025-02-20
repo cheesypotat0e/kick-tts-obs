@@ -55,6 +55,7 @@ def generate_code(request):
             {"Access-Control-Allow-Origin": "*"},
         )
 
+    print(auth_token)
     res = clerk.clients.verify(request={"token": auth_token})
 
     assert res is not None
