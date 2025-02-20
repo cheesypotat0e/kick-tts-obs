@@ -27,23 +27,23 @@ def auth_handler(request):
     # CORS middleware to add headers to every response
     @app.after_request
     def add_cors_headers(response):
-        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers.update({"Access-Control-Allow-Origin": "*"})
         return response
 
     # Handle CORS preflight requests
     @app.before_request
     def handle_preflight():
-        print("before request")
         if request.method == "OPTIONS":
-            print("preflight")
             response = app.make_response("")
-            response.headers["Access-Control-Allow-Origin"] = "*"
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-            response.headers["Access-Control-Allow-Headers"] = (
-                "Content-Type, Authorization"
+            response.headers.update(
+                {
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                    "Access-Control-Max-Age": "3600",
+                }
             )
-            response.status_code = 200
-            return response
+            return response, 200
 
     @app.route("/code", methods=["GET"])
     def code_route():
