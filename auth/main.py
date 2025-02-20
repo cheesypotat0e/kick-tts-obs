@@ -3,10 +3,8 @@ import secrets
 from datetime import datetime
 
 import functions_framework
-import jwt
 from clerk_backend_api import Clerk
 from google.cloud import firestore
-from jwt.exceptions import InvalidSignatureError, InvalidTokenError
 
 # Initialize Firestore client
 db = firestore.Client()

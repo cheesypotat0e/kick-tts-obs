@@ -2,6 +2,7 @@ import { Clerk } from "@clerk/clerk-js";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const redirectUrl = import.meta.env.VITE_REDIRECT_URL;
+const tokenRedirectUrl = import.meta.env.VITE_TOKEN_REDIRECT_URL;
 
 if (!clerkPubKey) {
   throw new Error("Missing Clerk Publishable Key");
@@ -35,10 +36,22 @@ clerk.addListener(async ({ user }) => {
 
     if (response.ok) {
       const data = await response.json();
-      window.location.href = `${redirectUrl}?code=${data.code}`;
+      const code = data.code;
+
+      document.getElementById("app")!.innerHTML = `
+      <div class="container">
+        <div class="code">
+          <h2>Your Authentication Code</h2>
+          <pre>${code}</pre>
+          <p>Use this code to authenticate your application</p>
+        </div>
+        </div>
+      `;
     } else {
       console.error("Failed to get auth code");
     }
+  } else {
+    console.error("Failed to get auth code");
   }
 });
 
@@ -68,14 +81,17 @@ try {
 
     if (response.ok) {
       const data = await response.json();
-      window.location.href = `${redirectUrl}?code=${data.code}`;
-    } else {
-      console.error("Failed to get auth code");
-    }
+      const code = data.code;
 
-    if (response.ok) {
-      const data = await response.json();
-      window.location.href = `${redirectUrl}?code=${data.code}`;
+      document.getElementById("app")!.innerHTML = `
+        <div class="container">
+          <div class="code">
+            <h2>Your Authentication Code</h2>
+            <pre>${code}</pre>
+            <p>Use this code to authenticate your application</p>
+          </div>
+        </div>
+      `;
     } else {
       console.error("Failed to get auth code");
     }
