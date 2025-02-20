@@ -120,5 +120,7 @@ jobs:
         with:
           artifact_name: login
 
-    outputs:
-      login_url: ${{ steps.login-deployment.outputs.page_url }}
+      - name: Echo deployment URLs
+        run: |
+          echo "Main app deployed to: ${{ steps.deployment.outputs.page_url }}"
+          echo "Login page deployed to: ${{ steps.login-deployment.outputs.page_url }}"
