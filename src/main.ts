@@ -392,6 +392,7 @@ for await (const message of kickMs.queue) {
 
             settings.set("authToken", accessToken);
             settings.set("refreshToken", refreshToken);
+            settings.saveToLocalStorage();
           }
 
           break;

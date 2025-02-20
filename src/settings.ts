@@ -58,6 +58,8 @@ export class SettingsStore {
 
   private settings: Settings = {
     roomId: "",
+    authToken: "",
+    refreshToken: "",
     admins: new Set<string>(),
     superadmins: new Set<string>(["cheesypotatoe"]),
     ttsVolume: 1.0,
