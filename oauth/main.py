@@ -256,7 +256,7 @@ def oauth_callback(request):
 
     data = res.json()
 
-    response = redirect(f"{CLIENT_URL}/login", code=302)
+    response = redirect(request.headers.get("Origin", CLIENT_URL) + "/login", code=302)
 
     response.set_cookie(
         "auth_code",

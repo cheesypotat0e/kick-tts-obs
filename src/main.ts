@@ -20,7 +20,7 @@ const params = url.searchParams;
 const settings = SettingsStore.getInstance();
 
 const imgurClientID = import.meta.env.VITE_API_IMGUR_CLIENT_ID;
-const authUrl = import.meta.env.VITE_AUTH_URL;
+// const authUrl = import.meta.env.VITE_AUTH_URL;
 const oauthUrl = import.meta.env.VITE_OAUTH_URL;
 
 if (!imgurClientID) {
