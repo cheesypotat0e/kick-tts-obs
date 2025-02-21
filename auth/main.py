@@ -1,7 +1,6 @@
 import os
 import secrets
 from datetime import datetime
-from functools import wraps
 
 import functions_framework
 import requests
@@ -298,10 +297,6 @@ def auth_code(request: Request):
 def revoke_auth(request: Request):
     """
     ```
-    Request:
-    {
-        "code": string  # Authentication code
-    }
     Headers:
     {
         "Authorization": string  # User's kick access token
@@ -319,7 +314,7 @@ def revoke_auth(request: Request):
         )
 
     try:
-        res = validate_kick_access_token(auth_token)
+        res = auth_kick_token(auth_token)
     except (UnauthorizedError, InvalidTokenError):
         return (
             {"error": "Unauthorized by Kick"},
@@ -346,18 +341,26 @@ def revoke_auth(request: Request):
             {"Access-Control-Allow-Origin": "*"},
         )
 
-    code = request.json().get("code")
+    user_id = res.json().data[0].user_id
 
-    auth_code = db.collection("auth-codes").document(code).get()
+    user = db.collection("users").document(str(user_id)).get()
 
-    if not auth_code.exists:
+    if not user.exists:
         return (
-            {"error": "Invalid or already used code"},
+            {"error": "User not found"},
             400,
             {"Access-Control-Allow-Origin": "*"},
         )
 
+    code = user.get("code")
+
     db.collection("auth-codes").document(code).delete()
+
+    return (
+        {"success": "Code revoked"},
+        200,
+        {"Access-Control-Allow-Origin": "*"},
+    )
 
 
 def validate_kick_access_token(access_token: str):

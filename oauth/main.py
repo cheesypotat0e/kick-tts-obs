@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 
 import functions_framework
 import requests
-from flask import Flask, Request, Response, redirect, wraps
+from flask import Flask, Request, Response, redirect
 from google.cloud import firestore
 
 # Load environment variables
