@@ -102,13 +102,13 @@ def oauth_handler(request):
 
 
 @app.after_request
-def after_request_func(response: Response):
+def after_request_func():
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response
 
 
 @app.before_request
-def before_request_func(request: Request):
+def before_request_func():
     if request.method == "OPTIONS":
         return (
             "",
