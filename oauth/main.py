@@ -102,13 +102,13 @@ def oauth_handler(request):
 
 
 @app.after_request
-def after_request(response: Response):
+def after_request_func(response: Response):
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response
 
 
 @app.before_request
-def before_request(request: Request):
+def before_request_func(request: Request):
     if request.method == "OPTIONS":
         return (
             "",
@@ -120,12 +120,6 @@ def before_request(request: Request):
                 "Access-Control-Max-Age": "3600",
             },
         )
-
-
-@app.after_request
-def after_request(response: Response):
-    response.headers.add("Access-Control-Allow-Origin", "*")
-    return response
 
 
 def refresh_token(request: Request):

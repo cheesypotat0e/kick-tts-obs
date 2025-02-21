@@ -23,7 +23,7 @@ app = Flask(__name__)
 
 
 @app.before_request
-def before_request(request: Request):
+def before_request_func(request: Request):
     if request.method == "OPTIONS":
         response = app.make_default_response()
         response.headers["Access-Control-Allow-Origin"] = "*"
@@ -33,7 +33,7 @@ def before_request(request: Request):
 
 
 @app.after_request
-def after_request(response: Response):
+def after_request_func(response: Response):
     response.headers["Access-Control-Allow-Origin"] = "*"
     return response
 
