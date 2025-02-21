@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 
 import functions_framework
 import requests
-from flask import Flask, Request, Response, redirect
+from flask import Flask, Request, redirect, request
 from google.cloud import firestore
 
 # Load environment variables
@@ -81,18 +81,19 @@ def require_auth(f):
 
 
 @app.route("/callback", methods=["GET"])
-def oauth_callback_req(request):
+def oauth_callback_req():
+    return {}
     return oauth_callback(request)
 
 
 @app.route("/", methods=["GET"])
-def root_req(request):
+def root_req():
     return root(request)
 
 
 @require_auth
 @app.route("/refresh", methods=["POST"])
-def refresh_req(request: Request):
+def refresh_req():
     return refresh_token(request)
 
 
@@ -120,6 +121,11 @@ def before_request_func():
                 "Access-Control-Max-Age": "3600",
             },
         )
+
+
+@functions_framework.http
+def oauth_handler(request):
+    return app(request.environ, lambda _, y: y)
 
 
 def refresh_token(request: Request):

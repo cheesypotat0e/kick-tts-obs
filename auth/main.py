@@ -5,7 +5,7 @@ from datetime import datetime
 import functions_framework
 import requests
 from clerk_backend_api import Clerk
-from flask import Flask, Request, Response
+from flask import Flask, Request, Response, request
 from google.cloud import firestore
 
 # Initialize Firestore client
@@ -39,32 +39,31 @@ def after_request_func(response: Response):
 
 
 @app.route("/code", methods=["GET"])
-def generate_code_req(request: Request):
+def generate_code_req():
     return generate_code(request)
 
 
 @app.route("/validate", methods=["POST"])
-def validate_code_req(request: Request):
+def validate_code_req():
     return validate_auth_code(request)
 
 
 @app.route("/auth", methods=["POST"])
-def auth_req(request: Request):
+def auth_req():
     return auth_code(request)
 
 
 @app.route("/auth", methods=["DELETE"])
-def revoke_auth_req(request: Request):
+def revoke_auth_req():
     return revoke_auth(request)
 
 
 @functions_framework.http
-def auth_handler(request: Request):
+def auth_handler():
     return app(request.environ, lambda _, y: y)
 
 
-def generate_code(request: Request):
-
+def generate_code():
     auth_token = request.headers.get("Authorization")
 
     if not auth_token or not auth_token.startswith("Bearer "):
