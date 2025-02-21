@@ -59,8 +59,16 @@ def revoke_auth_req():
 
 
 @functions_framework.http
-def auth_handler():
-    return app(request.environ, lambda _, y: y)
+def oauth_handler(request):
+    with app.request_context(request.environ):
+        try:
+            rv = app.preprocess_request()
+            if rv is None:
+                rv = app.dispatch_request()
+        except Exception as e:
+            rv = app.handle_user_exception(e)
+        response = app.make_response(rv)
+        return app.process_response(response)
 
 
 def generate_code():

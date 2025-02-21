@@ -3,7 +3,6 @@ import hashlib
 import os
 import secrets
 from functools import wraps
-from urllib.parse import urlencode
 
 import functions_framework
 import requests
@@ -82,7 +81,6 @@ def require_auth(f):
 
 @app.route("/callback", methods=["GET"])
 def oauth_callback_req():
-    return {}
     return oauth_callback(request)
 
 
@@ -99,7 +97,15 @@ def refresh_req():
 
 @functions_framework.http
 def oauth_handler(request):
-    return app(request.environ, lambda _, y: y)
+    with app.request_context(request.environ):
+        try:
+            rv = app.preprocess_request()
+            if rv is None:
+                rv = app.dispatch_request()
+        except Exception as e:
+            rv = app.handle_user_exception(e)
+        response = app.make_response(rv)
+        return app.process_response(response)
 
 
 @app.after_request
@@ -121,11 +127,6 @@ def before_request_func():
                 "Access-Control-Max-Age": "3600",
             },
         )
-
-
-@functions_framework.http
-def oauth_handler(request):
-    return app(request.environ, lambda _, y: y)
 
 
 def refresh_token(request: Request):
