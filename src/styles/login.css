@@ -1,0 +1,87 @@
+body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  background: #000000;
+  color: white;
+}
+
+#app {
+  height: 100%;
+}
+
+#spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.warning-container {
+  color: #ff0000;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+
+.code-container-container {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  flex-direction: column;
+  align-items: center;
+}
+
+.code-container-container-reveal {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+.code-container-container-reveal-button {
+  color: black;
+  background: #53fc18;
+  border: none;
+  padding: 8px;
+  border-radius: 4px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  cursor: pointer;
+}
+
+.code-container {
+  background: #222222;
+  width: fit-content;
+  padding: 8px;
+  max-width: 80%;
+  cursor: pointer;
+  border-radius: 4px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+@supports (-webkit-text-security: disc) {
+  .hidden {
+    -webkit-text-security: disc;
+  }
+}
+
+@supports not (-webkit-text-security: disc) {
+  .hidden {
+    filter: blur(5px);
+  }
+}

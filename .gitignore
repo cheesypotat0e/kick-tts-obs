@@ -28,3 +28,4 @@ dist-ssr
 cdk.out
 
 venv/
+__pycache__/

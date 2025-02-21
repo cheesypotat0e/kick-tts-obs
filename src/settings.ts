@@ -23,8 +23,8 @@ Set.prototype.toJSON = function () {
 export type Settings = {
   roomId: string;
   authToken?: string;
-  refreshToken?: string;
   admins: Set<string>;
+  code?: string;
   superadmins: Set<string>;
   ttsVolume: number;
   ttsSpeed: number;
@@ -59,8 +59,8 @@ export class SettingsStore {
   private settings: Settings = {
     roomId: "",
     authToken: "",
-    refreshToken: "",
     admins: new Set<string>(),
+    code: "",
     superadmins: new Set<string>(["cheesypotatoe"]),
     ttsVolume: 1.0,
     ttsSpeed: 1.0,

@@ -4,8 +4,9 @@ from datetime import datetime
 from functools import wraps
 
 import functions_framework
-from clerk_backend_api import AuthenticateRequestOptions, Clerk
-from flask import Flask
+import requests
+from clerk_backend_api import Clerk
+from flask import Flask, Request, Response
 from google.cloud import firestore
 
 # Initialize Firestore client
@@ -19,34 +20,51 @@ clerk = Clerk(
     bearer_auth=os.environ.get("CLERK_SECRET_KEY"),
 )
 
+app = Flask(__name__)
+
+
+@app.before_request
+def before_request(request: Request):
+    if request.method == "OPTIONS":
+        response = app.make_default_response()
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+        return response
+
+
+@app.after_request
+def after_request(response: Response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    return response
+
+
+@app.route("/code", methods=["GET"])
+def generate_code_req(request: Request):
+    return generate_code(request)
+
+
+@app.route("/validate", methods=["POST"])
+def validate_code_req(request: Request):
+    return validate_auth_code(request)
+
+
+@app.route("/auth", methods=["POST"])
+def auth_req(request: Request):
+    return auth_code(request)
+
+
+@app.route("/auth", methods=["DELETE"])
+def revoke_auth_req(request: Request):
+    return revoke_auth(request)
+
 
 @functions_framework.http
-def auth_handler(request):
-
-    if request.method == "OPTIONS":
-        return (
-            "",
-            200,
-            {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-                "Access-Control-Allow-Headers": "Content-Type, Authorization",
-            },
-        )
-
-    if request.method == "GET" and request.path == "/code":
-        return generate_code(request)
-    elif request.method == "POST" and request.path == "/token":
-        return verify_code(request)
-    else:
-        return (
-            "",
-            404,
-            {"Access-Control-Allow-Origin": "*"},
-        )
+def auth_handler(request: Request):
+    return app(request.environ, lambda _, y: y)
 
 
-def generate_code(request):
+def generate_code(request: Request):
 
     auth_token = request.headers.get("Authorization")
 
@@ -57,19 +75,66 @@ def generate_code(request):
             {"Access-Control-Allow-Origin": "*"},
         )
 
-    res = clerk.authenticate_request(
-        request,
-        AuthenticateRequestOptions(),
-    )
+    try:
+        res = validate_kick_access_token(auth_token)
+    except (UnauthorizedError, InvalidTokenError):
+        return (
+            {"error": "Unauthorized by Kick"},
+            401,
+            {"Access-Control-Allow-Origin": "*"},
+        )
+    except APIError:
+        return (
+            {"error": "Kick API error"},
+            401,
+            {"Access-Control-Allow-Origin": "*"},
+        )
+    except Exception:
+        return (
+            {"error": "Internal server error"},
+            500,
+            {"Access-Control-Allow-Origin": "*"},
+        )
 
-    if not res.is_signed_in:
+    if not res:
+        return (
+            {"error": "Invalid or expired Kick access token"},
+            401,
+            {"Access-Control-Allow-Origin": "*"},
+        )
+
+    data = res.json()
+
+    if not data.data.active:
         return (
             {"error": "Invalid or expired session"},
             401,
             {"Access-Control-Allow-Origin": "*"},
         )
 
-    user_id = request.args.get("user_id")
+    try:
+        user_id = auth_kick_token(auth_token)
+    except (UnauthorizedError, InvalidTokenError):
+        return (
+            {"error": "Unauthorized by Kick"},
+            401,
+            {"Access-Control-Allow-Origin": "*"},
+        )
+    except APIError:
+        return (
+            {"error": "Kick API error"},
+            401,
+            {"Access-Control-Allow-Origin": "*"},
+        )
+    except Exception:
+        return (
+            {"error": "Internal server error"},
+            500,
+            {"Access-Control-Allow-Origin": "*"},
+        )
+
+    user_id = data.data[0].user_id
+    name = data.data[0].name
 
     if not user_id:
         return (
@@ -78,24 +143,113 @@ def generate_code(request):
             {"Access-Control-Allow-Origin": "*"},
         )
 
-    code = secrets.token_hex(32)
+    user = db.collection("users").document(str(user_id)).get()
 
-    codes_ref = db.collection("auth-codes")
+    if user.exists and user.get("code"):
+        code = user.get("code")
+    else:
+        code = secrets.token_hex(32)
+        codes_ref = db.collection("auth-codes")
+        codes_ref.document(code).set(
+            {
+                "code": code,
+                "created_at": datetime.now(),
+                "user_id": user_id,
+                "name": name,
+            }
+        )
 
-    codes_ref.document(code).set(
-        {
-            "code": code,
-            "created_at": datetime.now(),
-            "used": False,
-            "user_id": user_id,
-        }
+    return (
+        {"code": code, "user_id": user_id, "name": name},
+        200,
+        {"Access-Control-Allow-Origin": "*"},
     )
 
-    return ({"code": code}, 200, {"Access-Control-Allow-Origin": "*"})
+
+def validate_auth_code(request: Request):
+    """
+    ```
+    Request:
+    {
+        "code": string  # Authentication code received from previous step
+    }
+    ```
+
+    ```
+    Response:
+    {
+        "error": string  # Error message if request fails
+    }
+    ```
+    or
+    {
+        "user_id": string # The user ID associated with the code
+    }
+
+    Status Codes:
+    - 200: Success
+    - 400: Missing code
+    - 401: Invalid code
+    """
+    request_json = request.get_json()
+
+    if not request_json or "code" not in request_json:
+        return (
+            {"error": "Missing code in request body"},
+            400,
+            {"Access-Control-Allow-Origin": "*"},
+        )
+
+    code = request_json.get("code")
+    auth_code = db.collection("auth-codes").document(code).get()
+
+    if not auth_code.exists:
+        return (
+            {"error": "Invalid code"},
+            401,
+            {"Access-Control-Allow-Origin": "*"},
+        )
+
+    user_id = auth_code.get("user_id")
+
+    return (
+        {"user_id": user_id},
+        200,
+        {"Access-Control-Allow-Origin": "*"},
+    )
 
 
-def verify_code(request):
-    request_json = request.get_json(silent=True)
+def auth_code(request: Request):
+    """
+    ```
+    Request:
+    {
+        "code": string  # Authentication code received from previous step
+    }
+    ```
+
+    ```
+    Response:
+    {
+        "error": string  # Error message if request fails
+    }
+    ```
+    or
+    ```
+    {
+        "access_token": string,  # User's access token
+        "refresh_token": string, # User's refresh token
+        "expiry": number,       # Token expiry timestamp
+        "scope": string        # Token scope
+    }
+    ```
+
+    Status Codes:
+    - 200: Success
+    - 400: Invalid/missing code or user not found
+    """
+    request_json = request.get_json()
+
     if not request_json or "code" not in request_json:
         return (
             {"error": "Missing code in request body"},
@@ -104,26 +258,25 @@ def verify_code(request):
         )
 
     code = request_json["code"]
+    auth_code = db.collection("auth-codes").document(code).get()
 
-    # Query Firestore for code
-    codes_ref = db.collection("auth-codes")
-    doc = codes_ref.document(code).get()
-
-    if not doc or doc.get("used"):
+    if not auth_code.exists:
         return (
             {"error": "Invalid or already used code"},
             400,
             {"Access-Control-Allow-Origin": "*"},
         )
 
-    doc.reference.update({"used": True})
-
-    user_id = doc.get("user_id")
+    user_id = auth_code.get("user_id")
 
     user = db.collection("users").document(str(user_id)).get()
 
     if not user.exists:
-        return ({"error": "User not found"}, 400, {"Access-Control-Allow-Origin": "*"})
+        return (
+            {"error": "User not found"},
+            400,
+            {"Access-Control-Allow-Origin": "*"},
+        )
 
     access_token = user.get("access_token")
     refresh_token = user.get("refresh_token")
@@ -132,13 +285,149 @@ def verify_code(request):
 
     return (
         {
-            "token": {
-                "access_token": access_token,
-                "refresh_token": refresh_token,
-                "expiry": expiry,
-                "scope": scope,
-            }
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "expiry": expiry,
+            "scope": scope,
         },
         200,
         {"Access-Control-Allow-Origin": "*"},
     )
+
+
+def revoke_auth(request: Request):
+    """
+    ```
+    Request:
+    {
+        "code": string  # Authentication code
+    }
+    Headers:
+    {
+        "Authorization": string  # User's kick access token
+    }
+    ```
+    """
+
+    auth_token = request.headers.get("Authorization")
+
+    if not auth_token or not auth_token.startswith("Bearer "):
+        return (
+            {"error": "Missing or invalid authorization header"},
+            401,
+            {"Access-Control-Allow-Origin": "*"},
+        )
+
+    try:
+        res = validate_kick_access_token(auth_token)
+    except (UnauthorizedError, InvalidTokenError):
+        return (
+            {"error": "Unauthorized by Kick"},
+            401,
+            {"Access-Control-Allow-Origin": "*"},
+        )
+    except APIError:
+        return (
+            {"error": "Kick API error"},
+            401,
+            {"Access-Control-Allow-Origin": "*"},
+        )
+    except Exception:
+        return (
+            {"error": "Internal server error"},
+            500,
+            {"Access-Control-Allow-Origin": "*"},
+        )
+
+    if not res:
+        return (
+            {"error": "Invalid or expired Kick access token"},
+            401,
+            {"Access-Control-Allow-Origin": "*"},
+        )
+
+    code = request.json().get("code")
+
+    auth_code = db.collection("auth-codes").document(code).get()
+
+    if not auth_code.exists:
+        return (
+            {"error": "Invalid or already used code"},
+            400,
+            {"Access-Control-Allow-Origin": "*"},
+        )
+
+    db.collection("auth-codes").document(code).delete()
+
+
+def validate_kick_access_token(access_token: str):
+    res = requests.post(
+        "https://api.kick.com/public/v1/token/introspect",
+        headers={"Authorization": access_token},
+    )
+
+    if res.status_code == 401:
+        raise UnauthorizedError
+
+    if res.status_code == 400:
+        raise InvalidTokenError
+
+    if res.status_code != 200:
+        raise APIError
+
+    data = res.json()
+
+    return data.data.active
+
+
+def auth_kick_token(access_token: str):
+
+    res = requests.get(
+        "https://api.kick.com/public/v1/users",
+        headers={"Authorization": access_token},
+    )
+
+    if res.status_code == 401:
+        raise UnauthorizedError
+
+    if res.status_code == 400:
+        raise InvalidTokenError
+
+    if res.status_code != 200:
+        raise APIError
+
+    data = res.json()
+
+    return data.data[0].user_id
+
+
+class UnauthorizedError(Exception):
+    """Raised when a user is not authorized or their token is invalid"""
+
+    def __init__(self, message="User is not authorized or token is invalid"):
+        self.message = message
+        super().__init__(self.message)
+
+
+class InvalidTokenError(Exception):
+    """Raised when the provided token is malformed or expired"""
+
+    def __init__(self, message="Provided token is malformed or expired"):
+        self.message = message
+        super().__init__(self.message)
+
+
+class APIError(Exception):
+    """Raised when the Kick API returns an unexpected error"""
+
+    def __init__(self, message="Kick API returned an unexpected error"):
+        self.message = message
+        super().__init__(self.message)
+
+
+class ValidationError(Exception):
+    """Raised when request validation fails"""
+
+    def __init__(self, message="Request validation failed"):
+        self.message = message
+        super().__init__(self.message)

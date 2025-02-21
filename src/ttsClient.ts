@@ -71,7 +71,8 @@ export class TTSClient {
               v.platform,
               new GCloudFetch(
                 this.settings.get("journeyProjectName"),
-                this.settings.get("journeyFunctionName")
+                this.settings.get("journeyFunctionName"),
+                this.settings.get("code") ?? ""
               )
             );
           }
@@ -201,15 +202,24 @@ class GCloudTTSMessage implements TTSMessage {
 }
 
 class GCloudFetch {
-  constructor(private projectName: string, private functionName: string) {}
+  constructor(
+    private projectName: string,
+    private functionName: string,
+    private code: string
+  ) {}
 
   public async get(params: string) {
+    if (!this.code) {
+      console.error("Missing code");
+    }
+
     if (!params.startsWith("?")) {
       params = "?" + params;
     }
 
     return fetch(
-      `https://${this.projectName}.cloudfunctions.net/${this.functionName}${params}`
+      `https://${this.projectName}.cloudfunctions.net/${this.functionName}${params}`,
+      { headers: { Authorization: `Bearer ${this.code}` } }
     );
   }
 }

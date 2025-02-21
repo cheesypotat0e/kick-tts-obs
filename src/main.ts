@@ -11,6 +11,7 @@ import { VideoClient } from "./video-client.js";
 import { ImageClient } from "./image-client.js";
 import { FishVoice, fishVoices } from "./fish-voices.js";
 import { RateLimiter } from "./rate-limit.js";
+import { KickApiClient } from "./kick-api-client.js";
 
 const url = new URL(window.location.href);
 
@@ -20,6 +21,7 @@ const settings = SettingsStore.getInstance();
 
 const imgurClientID = import.meta.env.VITE_API_IMGUR_CLIENT_ID;
 const authUrl = import.meta.env.VITE_AUTH_URL;
+const oauthUrl = import.meta.env.VITE_OAUTH_URL;
 
 if (!imgurClientID) {
   throw new Error(
@@ -87,6 +89,8 @@ imageClient.start();
 const authorizer = new Authorizer(settings);
 
 const rateLimiter = new RateLimiter(settings.get("rateLimits").entries());
+
+const kickApiClient = new KickApiClient(settings, oauthUrl);
 
 let messageIndex = 0;
 
@@ -374,27 +378,9 @@ for await (const message of kickMs.queue) {
           settings.saveToLocalStorage();
           break;
         }
-        case MessageType.code: {
+        case MessageType.send: {
           const { content } = segment;
-
-          const res = await fetch(`${authUrl}/token`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ code: content }),
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            const accessToken = data.token.access_token;
-            const refreshToken = data.token.refresh_token;
-
-            settings.set("authToken", accessToken);
-            settings.set("refreshToken", refreshToken);
-            settings.saveToLocalStorage();
-          }
-
+          await kickApiClient.sendMessage(content);
           break;
         }
         default:
