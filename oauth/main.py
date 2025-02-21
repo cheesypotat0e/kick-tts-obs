@@ -3,6 +3,7 @@ import hashlib
 import os
 import secrets
 from functools import wraps
+from urllib.parse import urlencode
 
 import functions_framework
 import requests
