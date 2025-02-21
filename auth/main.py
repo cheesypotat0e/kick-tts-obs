@@ -71,7 +71,7 @@ def auth_handler(request):
         return app.process_response(response)
 
 
-def generate_code():
+def generate_code(request: Request):
     auth_token = request.headers.get("Authorization")
 
     if not auth_token or not auth_token.startswith("Bearer "):
