@@ -102,7 +102,7 @@ def oauth_handler(request):
 
 
 @app.after_request
-def after_request_func():
+def after_request_func(response):
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response
 

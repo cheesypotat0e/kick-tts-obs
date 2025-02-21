@@ -33,7 +33,7 @@ def before_request_func():
 
 
 @app.after_request
-def after_request_func():
+def after_request_func(response: Response):
     response.headers["Access-Control-Allow-Origin"] = "*"
     return response
 
