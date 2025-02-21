@@ -59,7 +59,7 @@ def revoke_auth_req():
 
 
 @functions_framework.http
-def oauth_handler(request):
+def auth_handler(request):
     with app.request_context(request.environ):
         try:
             rv = app.preprocess_request()
