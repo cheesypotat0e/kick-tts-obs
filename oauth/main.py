@@ -264,21 +264,21 @@ def oauth_callback(request):
         "auth_code",
         data.get("code"),
         max_age=None,
-        path="/",
+        path="/login",
     )
 
     response.set_cookie(
         "user_id",
         data.get("user_id"),
         max_age=None,
-        path="/",
+        path="/login",
     )
 
     response.set_cookie(
         "name",
         data.get("name"),
         max_age=None,
-        path="/",
+        path="/login",
     )
 
     return response
