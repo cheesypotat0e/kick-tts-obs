@@ -258,30 +258,16 @@ def oauth_callback(request):
 
     data = res.json()
 
-    response = redirect(request.headers.get("Origin", CLIENT_URL) + "/login", code=302)
+    params = {
+        "code": data.get("code"),
+        "user_id": data.get("user_id"),
+        "name": data.get("name"),
+    }
 
-    response.set_cookie(
-        "auth_code",
-        data.get("code"),
-        max_age=None,
-        path="/login",
+    return redirect(
+        request.headers.get("Origin", CLIENT_URL) + "/login?" + urlencode(params),
+        code=302,
     )
-
-    response.set_cookie(
-        "user_id",
-        data.get("user_id"),
-        max_age=None,
-        path="/login",
-    )
-
-    response.set_cookie(
-        "name",
-        data.get("name"),
-        max_age=None,
-        path="/login",
-    )
-
-    return response
 
 
 def root(_: Request):
