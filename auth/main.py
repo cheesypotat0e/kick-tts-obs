@@ -393,6 +393,8 @@ def validate_kick_access_token(access_token: str):
 
     data = res.json()
 
+    print(data)
+
     return data.data.active
 
 
