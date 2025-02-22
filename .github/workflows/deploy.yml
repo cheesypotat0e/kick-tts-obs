@@ -58,7 +58,7 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Deploy to Cloud Functions
+      - name: Deploy OAuth Function
         run: |
           gcloud functions deploy kick-oauth \
             --gen2 \
@@ -68,8 +68,9 @@ jobs:
             --entry-point=oauth_handler \
             --trigger-http \
             --allow-unauthenticated \
+            --quiet
 
-      - name: Deploy to Cloud Functions
+      - name: Deploy Auth Function
         run: |
           gcloud functions deploy kick-auth \
             --gen2 \
@@ -79,6 +80,19 @@ jobs:
             --entry-point=auth_handler \
             --trigger-http \
             --allow-unauthenticated \
+            --quiet
+
+      - name: Deploy TTS Function
+        run: |
+          gcloud functions deploy kick-tts \
+            --gen2 \
+            --runtime=python310 \
+            --region=us-west1 \
+            --source=./functions/tts.py \
+            --entry-point=main \
+            --trigger-http \
+            --allow-unauthenticated \
+            --quiet \
 
       - name: Run Build
         run: |
