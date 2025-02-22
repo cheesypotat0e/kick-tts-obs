@@ -67,7 +67,7 @@ def auth_handler(request):
             if rv is None:
                 rv = app.dispatch_request()
         except Exception as e:
-            print(f"Error in auth_handler: {e.with_traceback()}")
+            print(f"Error in auth_handler: {str(e)}")
             rv = app.handle_user_exception(e)
         response = app.make_response(rv)
         return app.process_response(response)
@@ -136,7 +136,7 @@ def generate_code():
             {"Access-Control-Allow-Origin": "*"},
         )
     except Exception as e:
-        print(f"Error in generate_code: {e.with_traceback()}")
+        print(f"Error in generate_code: {str(e)}")
         return (
             {"error": "Internal server error"},
             500,
@@ -340,7 +340,7 @@ def revoke_auth():
             {"Access-Control-Allow-Origin": "*"},
         )
     except Exception as e:
-        print(f"Error in revoke_auth: {e.with_traceback()}")
+        print(f"Error in revoke_auth: {str(e)}")
         return (
             {"error": "Internal server error"},
             500,
