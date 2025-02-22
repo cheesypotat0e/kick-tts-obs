@@ -246,7 +246,7 @@ class GCloudFetch {
       this.ttsServiceUrl += "/";
     }
 
-    return fetch(`https://${this.ttsServiceUrl}${params}`, {
+    return fetch(`${this.ttsServiceUrl}${params}`, {
       headers: { Authorization: `Bearer ${this.code}` },
     });
   }

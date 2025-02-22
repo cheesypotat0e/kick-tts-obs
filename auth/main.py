@@ -28,7 +28,7 @@ def before_request_func():
     if request.method == "OPTIONS":
         return (
             "",
-            200,
+            204,
             {
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
