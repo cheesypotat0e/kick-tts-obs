@@ -49,6 +49,9 @@ export class TTSClient {
 
     const response = await fetch(`${authUrl}/auth`, {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         code: this.settings.get("code"),
       }),
@@ -86,27 +89,25 @@ export class TTSClient {
         let ttsMessage: TTSMessage | undefined = undefined;
 
         if (this.isGoogleVoice(voice.id)) {
-          if (this.isGoogleEnabled()) {
-            const id = voice.id.toLowerCase();
+          const id = voice.id.toLowerCase();
 
-            const v = this.settings.get("voices").get(id);
+          const v = this.settings.get("voices").get(id);
 
-            if (!v) {
-              continue;
-            }
-
-            ttsMessage = new GCloudTTSMessage(
-              text,
-              v.voiceName,
-              v.platform === "neets" ? "" : v.code,
-              v.platform,
-              new GCloudFetch(
-                this.settings.get("ttsServiceUrl"),
-                this.settings.get("code") ?? "",
-                this.settings.get("authFeatureFlag") ?? false
-              )
-            );
+          if (!v) {
+            continue;
           }
+
+          ttsMessage = new GCloudTTSMessage(
+            text,
+            v.voiceName,
+            v.platform === "neets" ? "" : v.code,
+            v.platform,
+            new GCloudFetch(
+              this.settings.get("ttsServiceUrl"),
+              this.settings.get("code") ?? "",
+              this.settings.get("authFeatureFlag") ?? false
+            )
+          );
         } else {
           ttsMessage = new StreamElementsTTSMessage(text, voice.id);
         }
@@ -127,13 +128,6 @@ export class TTSClient {
         console.error("Error processing TTS message: ", error);
       }
     }
-  }
-
-  private isGoogleEnabled() {
-    return (
-      this.settings.get("journeyFunctionName") &&
-      this.settings.get("journeyProjectName")
-    );
   }
 
   private isGoogleVoice(voice: string) {

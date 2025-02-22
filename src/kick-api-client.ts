@@ -46,7 +46,10 @@ export class KickApiClient {
 
     const response = await fetch(`${oauthUrl}/refresh`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${this.settings.get("code")}` },
+      headers: {
+        Authorization: `Bearer ${this.settings.get("code")}`,
+        "Content-Type": "application/json",
+      },
     });
 
     const data = (await response.json()) as RefreshTokenResponse;
@@ -58,6 +61,10 @@ export class KickApiClient {
   public async sendMessage(message: string) {
     return this.fetch<any>("/public/v1/chat", {
       method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.settings.get("code")}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         content: message,
         type: "bot",
