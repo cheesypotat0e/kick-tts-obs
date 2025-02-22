@@ -45,7 +45,7 @@ jobs:
             --gen2 \
             --runtime=python310 \
             --region=us-west1 \
-            --source=./functions/tts.py \
+            --source=./functions \
             --entry-point=main \
             --trigger-http \
             --allow-unauthenticated \
