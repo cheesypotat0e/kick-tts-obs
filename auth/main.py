@@ -98,7 +98,7 @@ def generate_code():
             {"Access-Control-Allow-Origin": "*"},
         )
     except Exception as e:
-        print(f"Error in generate_code: {e.with_traceback()}")
+        print(f"Error in generate_code: {str(e)}")
         return (
             {"error": "Internal server error"},
             500,
@@ -383,13 +383,13 @@ def validate_kick_access_token(access_token: str):
     )
 
     if res.status_code == 401:
-        raise UnauthorizedError
+        raise UnauthorizedError(str(res.json()))
 
     if res.status_code == 400:
-        raise InvalidTokenError
+        raise InvalidTokenError(str(res.json()))
 
     if res.status_code != 200:
-        raise APIError
+        raise APIError(str(res.json()))
 
     data = res.json()
 
