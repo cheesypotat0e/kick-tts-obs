@@ -189,6 +189,8 @@ def oauth_callback(request):
     code = request.args.get("code")
     state = request.args.get("state")
 
+    print(request.headers)
+
     if not code or not state:
         return {"error": "No code received"}, 400, {"Access-Control-Allow-Origin": "*"}
 
