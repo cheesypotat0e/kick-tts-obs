@@ -253,6 +253,7 @@ export class SettingsStore {
 
       for (const [key, value] of Object.entries(settings)) {
         if (this.isValidKey(key)) {
+          if (value === "") continue;
           const typedValue = this.convertFromLocalStorage(key, value);
           if (this.assertType(key, typedValue)) {
             this.set(key, typedValue);
