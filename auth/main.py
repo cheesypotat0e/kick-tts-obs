@@ -40,22 +40,22 @@ def after_request_func(response: Response):
 
 @app.route("/code", methods=["GET"])
 def generate_code_req():
-    return generate_code(request)
+    return generate_code()
 
 
 @app.route("/validate", methods=["POST"])
 def validate_code_req():
-    return validate_auth_code(request)
+    return validate_auth_code()
 
 
 @app.route("/auth", methods=["POST"])
 def auth_req():
-    return auth_code(request)
+    return auth_code()
 
 
 @app.route("/auth", methods=["DELETE"])
 def revoke_auth_req():
-    return revoke_auth(request)
+    return revoke_auth()
 
 
 @functions_framework.http
@@ -71,7 +71,7 @@ def auth_handler(request):
         return app.process_response(response)
 
 
-def generate_code(request: Request):
+def generate_code():
     auth_token = request.headers.get("Authorization")
 
     if not auth_token or not auth_token.startswith("Bearer "):
@@ -172,7 +172,7 @@ def generate_code(request: Request):
     )
 
 
-def validate_auth_code(request: Request):
+def validate_auth_code():
     """
     ```
     Request:
@@ -225,7 +225,7 @@ def validate_auth_code(request: Request):
     )
 
 
-def auth_code(request: Request):
+def auth_code():
     """
     ```
     Request:
@@ -301,7 +301,7 @@ def auth_code(request: Request):
     )
 
 
-def revoke_auth(request: Request):
+def revoke_auth():
     """
     ```
     Headers:
