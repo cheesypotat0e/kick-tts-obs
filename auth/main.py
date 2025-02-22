@@ -382,20 +382,18 @@ def validate_kick_access_token(access_token: str):
         headers={"Authorization": access_token},
     )
 
-    if res.status_code == 401:
-        raise UnauthorizedError(str(res.json()))
-
-    if res.status_code == 400:
-        raise InvalidTokenError(str(res.json()))
-
-    if res.status_code != 200:
-        raise APIError(str(res.json()))
-
     data = res.json()
 
-    print(data)
+    if res.status_code == 401:
+        raise UnauthorizedError(data.get("message"))
 
-    return data.data.active
+    if res.status_code == 400:
+        raise InvalidTokenError(data.get("message"))
+
+    if res.status_code != 200:
+        raise APIError(data.get("message"))
+
+    return data.get("data").get("active")
 
 
 def auth_kick_token(access_token: str):
@@ -405,18 +403,18 @@ def auth_kick_token(access_token: str):
         headers={"Authorization": access_token},
     )
 
-    if res.status_code == 401:
-        raise UnauthorizedError
-
-    if res.status_code == 400:
-        raise InvalidTokenError
-
-    if res.status_code != 200:
-        raise APIError
-
     data = res.json()
 
-    return data.data[0].user_id
+    if res.status_code == 401:
+        raise UnauthorizedError(data.get("message"))
+
+    if res.status_code == 400:
+        raise InvalidTokenError(data.get("message"))
+
+    if res.status_code != 200:
+        raise APIError(data.get("message"))
+
+    return data.get("data")[0].get("user_id")
 
 
 class UnauthorizedError(Exception):
