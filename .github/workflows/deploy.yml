@@ -18,7 +18,104 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Single deploy job since we're just deploying
+  deploy-tts-function:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install Python dependencies
+        working-directory: ./functions
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
+
+      - name: Deploy TTS Function
+        run: |
+          gcloud functions deploy kick-tts \
+            --gen2 \
+            --runtime=python310 \
+            --region=us-west1 \
+            --source=./functions/tts.py \
+            --entry-point=main \
+            --trigger-http \
+            --allow-unauthenticated \
+            --quiet
+
+  deploy-auth-function:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install Python dependencies
+        working-directory: ./auth
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
+
+      - name: Deploy Auth Function
+        run: |
+          gcloud functions deploy kick-auth \
+            --gen2 \
+            --runtime=python310 \
+            --region=us-west1 \
+            --source=./auth \
+            --entry-point=auth_handler \
+            --trigger-http \
+            --allow-unauthenticated \
+            --quiet
+
+  deploy-oauth-function:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install Python dependencies
+        working-directory: ./oauth
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
+
+      - name: Deploy OAuth Function
+        run: |
+          gcloud functions deploy kick-oauth \
+            --gen2 \
+            --runtime=python310 \
+            --region=us-west1 \
+            --source=./oauth \
+            --entry-point=oauth_handler \
+            --trigger-http \
+            --allow-unauthenticated \
+            --quiet
   deploy:
     environment:
       name: github-pages
@@ -33,66 +130,6 @@ jobs:
         with:
           version: 9
           run_install: true
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-
-      - name: Install Python dependencies
-        working-directory: ./oauth
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Install Python dependencies
-        working-directory: ./auth
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Deploy OAuth Function
-        run: |
-          gcloud functions deploy kick-oauth \
-            --gen2 \
-            --runtime=python310 \
-            --region=us-west1 \
-            --source=./oauth \
-            --entry-point=oauth_handler \
-            --trigger-http \
-            --allow-unauthenticated \
-            --quiet
-
-      - name: Deploy Auth Function
-        run: |
-          gcloud functions deploy kick-auth \
-            --gen2 \
-            --runtime=python310 \
-            --region=us-west1 \
-            --source=./auth \
-            --entry-point=auth_handler \
-            --trigger-http \
-            --allow-unauthenticated \
-            --quiet
-
-      - name: Deploy TTS Function
-        run: |
-          gcloud functions deploy kick-tts \
-            --gen2 \
-            --runtime=python310 \
-            --region=us-west1 \
-            --source=./functions/tts.py \
-            --entry-point=main \
-            --trigger-http \
-            --allow-unauthenticated \
-            --quiet \
 
       - name: Run Build
         run: |
