@@ -168,7 +168,7 @@ def generate_code():
         )
 
     return (
-        {"code": code, "user_id": user_id, "name": name},
+        {"code": code, "user_id": str(user_id), "name": name},
         200,
         {"Access-Control-Allow-Origin": "*"},
     )
