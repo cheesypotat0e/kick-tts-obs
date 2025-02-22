@@ -18,8 +18,13 @@ const getCookie = (name: string) => {
     ?.split("=")[1];
 };
 
-const code = localStorage.getItem("auth_code") ?? getCookie("auth_code");
-const name = localStorage.getItem("name") ?? getCookie("name");
+const params = new URLSearchParams(window.location.search);
+const code =
+  params.get("code") ??
+  localStorage.getItem("auth_code") ??
+  getCookie("auth_code");
+const name =
+  params.get("name") ?? localStorage.getItem("name") ?? getCookie("name");
 
 if (!code) {
   document.getElementById("app")!.innerHTML = `
