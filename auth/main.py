@@ -153,7 +153,7 @@ def generate_code():
 
     user = db.collection("users").document(str(user_id)).get()
 
-    if user.exists and user.get("code"):
+    if user.exists and "code" in user.to_dict():
         code = user.get("code")
     else:
         code = secrets.token_hex(32)
