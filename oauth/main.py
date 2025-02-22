@@ -252,7 +252,7 @@ def oauth_callback(request):
     if res.status_code != 200:
         return (
             {"error": "Failed to generate code"},
-            400,
+            500,
             {"Access-Control-Allow-Origin": "*"},
         )
 

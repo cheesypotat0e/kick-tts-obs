@@ -112,9 +112,7 @@ def generate_code():
             {"Access-Control-Allow-Origin": "*"},
         )
 
-    data = res.json()
-
-    if not data.data.active:
+    if not res:
         return (
             {"error": "Invalid or expired session"},
             401,
@@ -122,7 +120,7 @@ def generate_code():
         )
 
     try:
-        user_id = auth_kick_token(auth_token)
+        data = auth_kick_token(auth_token)
     except (UnauthorizedError, InvalidTokenError):
         return (
             {"error": "Unauthorized by Kick"},
@@ -143,8 +141,8 @@ def generate_code():
             {"Access-Control-Allow-Origin": "*"},
         )
 
-    user_id = data.data[0].user_id
-    name = data.data[0].name
+    user_id = data.get("user_id")
+    name = data.get("name")
 
     if not user_id:
         return (
@@ -414,7 +412,7 @@ def auth_kick_token(access_token: str):
     if res.status_code != 200:
         raise APIError(data.get("message"))
 
-    return data.get("data")[0].get("user_id")
+    return data.get("data")[0]
 
 
 class UnauthorizedError(Exception):
