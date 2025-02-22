@@ -11,7 +11,8 @@ app = Flask(__name__)
 api_key = os.getenv("GCLOUD_KEY")
 neet_api_key = os.getenv("NEETS_KEY")
 fish_api_key = os.getenv("FISH_KEY")
-
+authFeatureFlag = os.getenv("AUTH_FEATURE_FLAG")    
+authServiceUrl = os.getenv("AUTH_SERVICE_URL")
 
 @functions_framework.http
 def main(request):
@@ -21,7 +22,7 @@ def main(request):
             if rv is None:
                 rv = app.dispatch_request()
         except Exception as e:
-            print(f"Error in auth_handler: {e.with_traceback()}")
+            print(f"Error in tts_handler: {e.with_traceback()}")
             rv = app.handle_user_exception(e)
         response = app.make_response(rv)
         return app.process_response(response)
@@ -47,6 +48,18 @@ def after_request_func(response):
 
 @app.route("/", methods=["GET"])
 def tts_req():
+
+
+    if authFeatureFlag == "true":
+        token = request.headers.get("Authorization")
+
+        if not token:
+            return make_response("Missing token", 401)
+
+        code = token.split(" ")[1]
+
+        verify(code)   
+
     request_json = request.get_json(silent=True)
     request_args = request.args
 
@@ -58,6 +71,7 @@ def tts_req():
     language = request_json.get("lang") if request_json else request_args.get("lang")
     code = request_json.get("lang_code") if request_json else request_args.get("lang_code")
     platform = request_json.get("platform") if request_json else request_args.get("platform")
+
 
     try:
         headers = {}
@@ -139,3 +153,14 @@ def text_to_speech_api_key(
         )
         response.raise_for_status()
         return response.content
+
+def verify(token):
+    response = requests.post(f"{authServiceUrl}/validate", json={"code": token})
+
+    response.raise_for_status()
+
+    user_id = response.json().get("user_id")
+
+    print(f"Channel ID: {user_id} - Token: {token}")
+
+    return response.json()
