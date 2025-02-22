@@ -26,15 +26,15 @@ app = Flask(__name__)
 @app.before_request
 def before_request_func():
     if request.method == "OPTIONS":
-        response = app.make_response(
-            "OPTIONS",
-            headers={
+        return (
+            "",
+            200,
+            {
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
                 "Access-Control-Allow-Headers": "Authorization, Content-Type",
             },
         )
-        return response
 
 
 @app.after_request
