@@ -23,7 +23,7 @@ def main(request):
             if rv is None:
                 rv = app.dispatch_request()
         except Exception as e:
-            print(f"Error in tts_handler: {e.with_traceback()}")
+            print(f"Error in tts_handler: {str(e)}")
             rv = app.handle_user_exception(e)
         response = app.make_response(rv)
         return app.process_response(response)
@@ -32,13 +32,16 @@ def main(request):
 @app.before_request
 def before_request_func():
     if request.method == "OPTIONS":
-        response = app.make_default_response()
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "GET"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-        response.headers["Access-Control-Max-Age"] = "3600"
-        response.status_code = 204
-        return response
+        return (
+            "",
+            204,
+            {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                "Access-Control-Max-Age": "3600",
+            },
+        )
 
 
 @app.after_request
