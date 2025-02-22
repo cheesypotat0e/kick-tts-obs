@@ -21,10 +21,8 @@ type RefreshTokenResponse = {
 
 export class KickApiClient {
   settings: SettingsStore;
-  oauthUrl: string;
 
-  public constructor(settings: SettingsStore, oauthUrl: string) {
-    this.oauthUrl = oauthUrl;
+  public constructor(settings: SettingsStore) {
     this.settings = settings;
   }
 
@@ -40,7 +38,13 @@ export class KickApiClient {
   }
 
   private async refreshAccessToken() {
-    const response = await fetch(`${this.oauthUrl}/refresh`, {
+    const oauthUrl = this.settings.get("oauthServiceUrl");
+
+    if (!oauthUrl) {
+      throw new Error("OAuth URL not set");
+    }
+
+    const response = await fetch(`${oauthUrl}/refresh`, {
       method: "POST",
       headers: { Authorization: `Bearer ${this.settings.get("code")}` },
     });

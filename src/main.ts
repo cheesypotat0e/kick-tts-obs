@@ -20,8 +20,10 @@ const params = url.searchParams;
 const settings = SettingsStore.getInstance();
 
 const imgurClientID = import.meta.env.VITE_API_IMGUR_CLIENT_ID;
-// const authUrl = import.meta.env.VITE_AUTH_URL;
+const authUrl = import.meta.env.VITE_AUTH_URL;
 const oauthUrl = import.meta.env.VITE_OAUTH_URL;
+settings.set("authServiceUrl", authUrl);
+settings.set("oauthServiceUrl", oauthUrl);
 
 if (!imgurClientID) {
   throw new Error(
@@ -72,6 +74,15 @@ holler.start();
 
 const ttsClient = new TTSClient(settings, holler);
 
+try {
+  await ttsClient.init();
+} catch (error) {
+  console.error(
+    "Error initializing TTS client falling back to streamelements: ",
+    error
+  );
+}
+
 ttsClient.startTTSQueue();
 
 const bitsClient = new BitsClient(settings, holler);
@@ -90,7 +101,7 @@ const authorizer = new Authorizer(settings);
 
 const rateLimiter = new RateLimiter(settings.get("rateLimits").entries());
 
-const kickApiClient = new KickApiClient(settings, oauthUrl);
+const kickApiClient = new KickApiClient(settings);
 
 let messageIndex = 0;
 

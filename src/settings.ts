@@ -39,7 +39,9 @@ export type Settings = {
   bits: Map<string, { url: string; vol: number }>;
   videoVolume: number;
   authFeatureFlag: boolean;
-
+  authServiceUrl: string;
+  oauthServiceUrl: string;
+  ttsServiceUrl: string;
   subOnly: boolean;
 
   voices: Map<string, GCloudVoice | NeetsVoice | FishVoice>;
@@ -78,6 +80,9 @@ export class SettingsStore {
     voiceVolumes: new Map<string, number>(),
     subOnly: false,
     authFeatureFlag: false,
+    authServiceUrl: "",
+    oauthServiceUrl: "",
+    ttsServiceUrl: "",
     bits: new Map([
       [
         "follow",

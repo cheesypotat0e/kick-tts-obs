@@ -14,6 +14,7 @@ db = firestore.Client()
 # Load environment variables
 PRIVATE_KEY = os.environ.get("PRIVATE_KEY")
 PUBLIC_KEY = os.environ.get("PUBLIC_KEY")
+TTS_SERVICE_URL = os.environ.get("TTS_SERVICE_URL")
 
 clerk = Clerk(
     bearer_auth=os.environ.get("CLERK_SECRET_KEY"),
@@ -298,6 +299,7 @@ def auth_code():
             "refresh_token": refresh_token,
             "expiry": expiry,
             "scope": scope,
+            "tts_service_url": TTS_SERVICE_URL,
         },
         200,
         {"Access-Control-Allow-Origin": "*"},

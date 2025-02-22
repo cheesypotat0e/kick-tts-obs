@@ -7,8 +7,15 @@ type TTSState = {
   ms?: Messenger;
   ttsQueue: AsyncQueue<TTSEntry>;
   audio?: Holler;
-  // sendQueue: AsyncQueue<string>;
   processingTTSQueue: boolean;
+};
+
+type AuthResponse = {
+  access_token: string;
+  refresh_token: string;
+  expiry: number;
+  scope: string;
+  tts_service_url: string;
 };
 
 export type TTSEntry = {
@@ -32,6 +39,30 @@ export class TTSClient {
   };
 
   constructor(private settings: SettingsStore, private holler: Holler) {}
+
+  public async init() {
+    const authUrl = this.settings.get("authServiceUrl");
+
+    if (!authUrl) {
+      throw new Error("Auth URL not set");
+    }
+
+    const response = await fetch(`${authUrl}/auth`, {
+      method: "POST",
+      body: JSON.stringify({
+        code: this.settings.get("code"),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to authenticate");
+    }
+
+    const data = (await response.json()) as AuthResponse;
+
+    this.settings.set("authToken", data.access_token);
+    this.settings.set("ttsServiceUrl", data.tts_service_url);
+  }
 
   public enqueTTSQueue(message: TTSEntry) {
     this.state.ttsQueue.enqueue(message);
@@ -70,8 +101,7 @@ export class TTSClient {
               v.platform === "neets" ? "" : v.code,
               v.platform,
               new GCloudFetch(
-                this.settings.get("journeyProjectName"),
-                this.settings.get("journeyFunctionName"),
+                this.settings.get("ttsServiceUrl"),
                 this.settings.get("code") ?? "",
                 this.settings.get("authFeatureFlag") ?? false
               )
@@ -204,8 +234,7 @@ class GCloudTTSMessage implements TTSMessage {
 
 class GCloudFetch {
   constructor(
-    private projectName: string,
-    private functionName: string,
+    private ttsServiceUrl: string,
     private code: string,
     private authFeatureFlag: boolean
   ) {}
@@ -219,10 +248,13 @@ class GCloudFetch {
       params = "?" + params;
     }
 
-    return fetch(
-      `https://${this.projectName}.cloudfunctions.net/${this.functionName}${params}`,
-      { headers: { Authorization: `Bearer ${this.code}` } }
-    );
+    if (!this.ttsServiceUrl.endsWith("/")) {
+      this.ttsServiceUrl += "/";
+    }
+
+    return fetch(`https://${this.ttsServiceUrl}${params}`, {
+      headers: { Authorization: `Bearer ${this.code}` },
+    });
   }
 }
 
