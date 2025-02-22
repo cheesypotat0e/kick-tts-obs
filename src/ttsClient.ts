@@ -72,7 +72,8 @@ export class TTSClient {
               new GCloudFetch(
                 this.settings.get("journeyProjectName"),
                 this.settings.get("journeyFunctionName"),
-                this.settings.get("code") ?? ""
+                this.settings.get("code") ?? "",
+                this.settings.get("authFeatureFlag") ?? false
               )
             );
           }
@@ -205,11 +206,12 @@ class GCloudFetch {
   constructor(
     private projectName: string,
     private functionName: string,
-    private code: string
+    private code: string,
+    private authFeatureFlag: boolean
   ) {}
 
   public async get(params: string) {
-    if (!this.code) {
+    if (this.authFeatureFlag && !this.code) {
       console.error("Missing code");
     }
 

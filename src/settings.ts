@@ -38,6 +38,7 @@ export type Settings = {
   journeyProjectName: string;
   bits: Map<string, { url: string; vol: number }>;
   videoVolume: number;
+  authFeatureFlag: boolean;
 
   subOnly: boolean;
 
@@ -76,6 +77,7 @@ export class SettingsStore {
     voices: new Map<string, GCloudVoice | NeetsVoice>([]),
     voiceVolumes: new Map<string, number>(),
     subOnly: false,
+    authFeatureFlag: false,
     bits: new Map([
       [
         "follow",
