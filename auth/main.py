@@ -282,6 +282,7 @@ def auth_code():
     user_id = auth_code.get("user_id")
 
     user = db.collection("users").document(str(user_id)).get()
+    user_name = auth_code.get("name")
 
     if not user.exists:
         return (
@@ -302,6 +303,8 @@ def auth_code():
             "expiry": expiry,
             "scope": scope,
             "tts_service_url": TTS_SERVICE_URL,
+            "user_id": user_id,
+            "name": user_name,
         },
         200,
         {"Access-Control-Allow-Origin": "*"},

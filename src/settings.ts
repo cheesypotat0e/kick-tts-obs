@@ -43,7 +43,8 @@ export type Settings = {
   oauthServiceUrl: string;
   ttsServiceUrl: string;
   subOnly: boolean;
-
+  userId: string;
+  name: string;
   voices: Map<string, GCloudVoice | NeetsVoice | FishVoice>;
   voiceVolumes: Map<string, number>;
 
@@ -83,6 +84,8 @@ export class SettingsStore {
     authServiceUrl: "",
     oauthServiceUrl: "",
     ttsServiceUrl: "",
+    userId: "",
+    name: "",
     bits: new Map([
       [
         "follow",

@@ -44,6 +44,35 @@ if (!params.has("roomId")) {
 settings.upsertWithParams(params);
 settings.upsertFromLocalStorage();
 
+const code = settings.get("code");
+
+if (code) {
+  const res = await fetch(`${authUrl}/auth`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ code }),
+  });
+
+  const data = await res.json();
+
+  settings.set("userId", data.user_id);
+  settings.set("name", data.name);
+
+  const name = settings.get("name");
+
+  const chatRes = await fetch(
+    `https://kick.com/api/v2/channels/${name}/chatroom`
+  );
+
+  const chatData = await chatRes.json();
+
+  settings.set("roomId", chatData.id);
+
+  settings.saveToLocalStorage();
+}
+
 const existingVoices = settings.get("voices");
 
 settings.set(

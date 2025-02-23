@@ -16,6 +16,8 @@ type AuthResponse = {
   expiry: number;
   scope: string;
   tts_service_url: string;
+  user_id: string;
+  name: string;
 };
 
 export type TTSEntry = {
@@ -65,6 +67,18 @@ export class TTSClient {
 
     this.settings.set("authToken", data.access_token);
     this.settings.set("ttsServiceUrl", data.tts_service_url);
+    this.settings.set("userId", data.user_id);
+    this.settings.set("name", data.name);
+
+    const name = this.settings.get("name");
+
+    const {
+      data: { id },
+    } = await fetch(`https://kick.com/api/v2/channels/${name}/chatroom`).then(
+      (res) => res.json()
+    );
+
+    this.settings.set("roomId", id);
   }
 
   public enqueTTSQueue(message: TTSEntry) {
