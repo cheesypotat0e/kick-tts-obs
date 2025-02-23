@@ -72,11 +72,9 @@ export class TTSClient {
 
     const name = this.settings.get("name");
 
-    const {
-      data: { id },
-    } = await fetch(`https://kick.com/api/v2/channels/${name}/chatroom`).then(
-      (res) => res.json()
-    );
+    const { id } = await fetch(
+      `https://kick.com/api/v2/channels/${name}/chatroom`
+    ).then((res) => res.json());
 
     this.settings.set("roomId", id);
   }
