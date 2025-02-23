@@ -31,20 +31,7 @@ if (!imgurClientID) {
   );
 }
 
-if (params.has("roomID")) {
-  params.set("roomId", params.get("roomID")!);
-  params.delete("roomID");
-}
-
-if (!params.has("roomId")) {
-  // recovery mode
-  params.set("roomId", "88774");
-}
-
-settings.upsertWithParams(params);
-settings.upsertFromLocalStorage();
-
-const code = settings.get("code");
+const code = params.get("code");
 
 if (code) {
   const res = await fetch(`${authUrl}/auth`, {
@@ -71,6 +58,19 @@ if (code) {
   settings.set("roomId", chatData.id);
 
   settings.saveToLocalStorage();
+} else {
+  if (params.has("roomID")) {
+    params.set("roomId", params.get("roomID")!);
+    params.delete("roomID");
+  }
+
+  if (!params.has("roomId")) {
+    // recovery mode
+    params.set("roomId", "88774");
+  }
+
+  settings.upsertWithParams(params);
+  settings.upsertFromLocalStorage();
 }
 
 const existingVoices = settings.get("voices");
