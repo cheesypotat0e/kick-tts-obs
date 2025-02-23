@@ -33,6 +33,8 @@ if (!imgurClientID) {
 
 const code = params.get("code");
 
+settings.upsertWithParams(params);
+
 if (code) {
   const res = await fetch(`${authUrl}/auth`, {
     method: "POST",
@@ -68,10 +70,8 @@ if (code) {
     // recovery mode
     params.set("roomId", "88774");
   }
-
-  settings.upsertWithParams(params);
-  settings.upsertFromLocalStorage();
 }
+settings.upsertFromLocalStorage();
 
 const existingVoices = settings.get("voices");
 
