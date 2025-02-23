@@ -646,8 +646,8 @@ export class MessageParser {
         this.buffer.push(token);
       },
       outputTransform: (buffer: typeof this.buffer) => {
-        const [content] = buffer as string[];
-        return [{ type: MessageType.send, content }];
+        const content = buffer as string[];
+        return [{ type: MessageType.send, content: content.join(" ") }];
       },
       flushOnExit: true,
     },
