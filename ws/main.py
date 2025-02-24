@@ -62,12 +62,16 @@ manager = ConnectionManager()
 
 def verify_token(token: str) -> bool:
     try:
-        # Verify the JWT token using the public key
         jwt.decode(token, PUBLIC_KEY, algorithms=["RS256"])
         return True
     except JWTError as e:
         logger.error(f"JWT verification failed: {e}")
         return False
+
+
+@app.get("/")
+async def root():
+    return {"status": "ok"}
 
 
 @app.post("/broadcast")

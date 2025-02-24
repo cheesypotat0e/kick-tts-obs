@@ -4,8 +4,6 @@ from functools import wraps
 import functions_framework
 import jwt
 import requests
-from flask import Flask, Response, request
-
 from controllers.admins import add_admins, delete_admins
 from controllers.bans import add_ban, delete_ban, get_bans, update_ban
 from controllers.bits import add_bit, delete_bit, get_bit, get_bits, update_bit
@@ -26,11 +24,13 @@ from controllers.settings import (
 )
 from controllers.status_check import status_check
 from controllers.voices import add_voice, delete_voice, get_voice, update_voice
+from flask import Blueprint, Flask, Response, request
 
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "https://api.cheesybot.xyz/api/auth")
 JWT_PUBLIC_KEY = os.getenv("JWT_PUBLIC_KEY")
 
 app = Flask(__name__)
+api = Blueprint("api", __name__, url_prefix="/api")
 
 
 @app.before_request
@@ -133,171 +133,175 @@ def require_super_admin(f):
     return decorated_function
 
 
-@app.get("/")
+@api.get("/")
 async def status_check_handler():
     return await status_check()
 
 
 @require_auth
-@app.get("/settings")
+@api.get("/settings")
 async def get_settings_handler():
     return await get_settings()
 
 
 @require_auth
-@app.post("/settings")
+@api.post("/settings")
 async def update_settings_handler():
     return await update_settings()
 
 
 @require_auth
-@app.delete("/settings")
+@api.delete("/settings")
 async def delete_settings_field_handler():
     return await delete_settings_field()
 
 
 @require_auth
-@app.post("/settings/voices")
+@api.post("/settings/voices")
 async def add_voice_to_settings_handler():
     return await add_voice_to_settings()
 
 
 @require_auth
-@app.delete("/settings/voices")
+@api.delete("/settings/voices")
 async def delete_voice_from_settings_handler():
     return await delete_voice_from_settings()
 
 
 @require_auth
-@app.post("/settings/bits")
+@api.post("/settings/bits")
 async def add_bit_to_settings_handler():
     return await add_bit_to_settings()
 
 
 @require_auth
-@app.delete("/settings/bits")
+@api.delete("/settings/bits")
 async def delete_bit_from_settings_handler():
     return await delete_bit_from_settings()
 
 
 @require_auth
-@app.post("/admins")
+@api.post("/admins")
 async def add_admins_handler():
     return await add_admins()
 
 
 @require_auth
-@app.delete("/admins")
+@api.delete("/admins")
 async def delete_admins_handler():
     return await delete_admins()
 
 
 @require_auth
-@app.get("/voice")
+@api.get("/voice")
 async def get_voice_handler():
     return await get_voice()
 
 
 @require_auth
-@app.get("/voice/<voice_id>")
+@api.get("/voice/<voice_id>")
 async def get_voice_by_id_handler(voice_id: str):
     return await get_voice(voice_id)
 
 
 @require_auth
-@app.post("/voice")
+@api.post("/voice")
 async def add_voice_handler():
     return await add_voice()
 
 
 @require_auth
-@app.put("/voice/<voice_id>")
+@api.put("/voice/<voice_id>")
 async def update_voice_handler(voice_id: str):
     return await update_voice(voice_id)
 
 
 @require_auth
-@app.delete("/voice/<voice_id>")
+@api.delete("/voice/<voice_id>")
 async def delete_voice_handler(voice_id: str):
     return await delete_voice(voice_id)
 
 
 @require_auth
-@app.get("/bits")
+@api.get("/bits")
 async def get_bits_handler():
     return await get_bits()
 
 
 @require_auth
-@app.get("/bits/<bit_id>")
+@api.get("/bits/<bit_id>")
 async def get_bit_handler(bit_id: str):
     return await get_bit(bit_id)
 
 
 @require_auth
-@app.post("/bits")
+@api.post("/bits")
 async def add_bit_handler():
     return await add_bit()
 
 
 @require_auth
-@app.delete("/bits/<bit_id>")
+@api.delete("/bits/<bit_id>")
 async def delete_bit_handler(bit_id: str):
     return await delete_bit(bit_id)
 
 
 @require_auth
-@app.put("/bits/<bit_id>")
+@api.put("/bits/<bit_id>")
 async def update_bit_handler(bit_id: str):
     return await update_bit(bit_id)
 
 
 @require_auth
-@app.get("/bans")
+@api.get("/bans")
 async def get_bans_handler():
     return await get_bans()
 
 
 @require_auth
-@app.post("/bans")
+@api.post("/bans")
 async def add_ban_handler():
     return await add_ban()
 
 
 @require_auth
-@app.delete("/bans")
+@api.delete("/bans")
 async def delete_ban_handler():
     return await delete_ban()
 
 
 @require_auth
-@app.put("/bans")
+@api.put("/bans")
 async def update_ban_handler():
     return await update_ban()
 
 
 @require_auth
-@app.get("/ratelimits")
+@api.get("/ratelimits")
 async def get_ratelimits_handler():
     return await get_ratelimits()
 
 
 @require_auth
-@app.post("/ratelimits")
+@api.post("/ratelimits")
 async def add_ratelimit_handler():
     return await add_ratelimit()
 
 
 @require_auth
-@app.delete("/ratelimits")
+@api.delete("/ratelimits")
 async def delete_ratelimit_handler():
     return await delete_ratelimit()
 
 
 @require_auth
-@app.put("/ratelimits")
+@api.put("/ratelimits")
 async def update_ratelimit_handler():
     return await update_ratelimit()
+
+
+# Register the blueprint
+app.register_blueprint(api)
 
 
 @functions_framework.http
