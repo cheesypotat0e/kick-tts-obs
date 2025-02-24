@@ -43,6 +43,15 @@ def after_request_func(response: Response):
     return response
 
 
+@app.route("/", methods=["GET"])
+def index():
+    return (
+        {"status": "ok"},
+        200,
+        {"Access-Control-Allow-Origin": "*"},
+    )
+
+
 @app.route("/code", methods=["GET"])
 def generate_code_req():
     return generate_code()
