@@ -24,7 +24,7 @@ from controllers.settings import (
 )
 from controllers.status_check import status_check
 from controllers.voices import add_voice, delete_voice, get_voice, update_voice
-from flask import Blueprint, Flask, Response, request
+from flask import Blueprint, Flask, Request, Response, request
 
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "https://api.cheesybot.xyz/api/auth")
 JWT_PUBLIC_KEY = os.getenv("JWT_PUBLIC_KEY")
@@ -305,7 +305,7 @@ app.register_blueprint(api)
 
 
 @functions_framework.http
-def main():
+def main(request: Request):
     with app.request_context(request.environ):
         try:
             rv = app.preprocess_request()
