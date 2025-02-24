@@ -139,164 +139,164 @@ async def status_check_handler():
     return await status_check()
 
 
-@require_auth
 @app.get("/settings")
+@require_auth
 async def get_settings_handler():
     return await get_settings()
 
 
-@require_auth
 @app.post("/settings")
+@require_auth
 async def update_settings_handler():
     return await update_settings()
 
 
-@require_auth
 @app.delete("/settings")
+@require_auth
 async def delete_settings_field_handler():
     return await delete_settings_field()
 
 
-@require_auth
 @app.post("/settings/voices")
+@require_auth
 async def add_voice_to_settings_handler():
     return await add_voice_to_settings()
 
 
-@require_auth
 @app.delete("/settings/voices")
+@require_auth
 async def delete_voice_from_settings_handler():
     return await delete_voice_from_settings()
 
 
-@require_auth
 @app.post("/settings/bits")
+@require_auth
 async def add_bit_to_settings_handler():
     return await add_bit_to_settings()
 
 
-@require_auth
 @app.delete("/settings/bits")
+@require_auth
 async def delete_bit_from_settings_handler():
     return await delete_bit_from_settings()
 
 
-@require_auth
 @app.post("/admins")
+@require_auth
 async def add_admins_handler():
     return await add_admins()
 
 
-@require_auth
 @app.delete("/admins")
+@require_auth
 async def delete_admins_handler():
     return await delete_admins()
 
 
-@require_auth
 @app.get("/voice")
+@require_auth
 async def get_voice_handler():
     return await get_voice()
 
 
-@require_auth
 @app.get("/voice/<voice_id>")
+@require_auth
 async def get_voice_by_id_handler(voice_id: str):
     return await get_voice(voice_id)
 
 
-@require_auth
 @app.post("/voice")
+@require_auth
 async def add_voice_handler():
     return await add_voice()
 
 
-@require_auth
 @app.put("/voice/<voice_id>")
+@require_auth
 async def update_voice_handler(voice_id: str):
     return await update_voice(voice_id)
 
 
-@require_auth
 @app.delete("/voice/<voice_id>")
+@require_auth
 async def delete_voice_handler(voice_id: str):
     return await delete_voice(voice_id)
 
 
-@require_auth
 @app.get("/bits")
+@require_auth
 async def get_bits_handler():
     return await get_bits()
 
 
-@require_auth
 @app.get("/bits/<bit_id>")
+@require_auth
 async def get_bit_handler(bit_id: str):
     return await get_bit(bit_id)
 
 
-@require_auth
 @app.post("/bits")
+@require_auth
 async def add_bit_handler():
     return await add_bit()
 
 
-@require_auth
 @app.delete("/bits/<bit_id>")
+@require_auth
 async def delete_bit_handler(bit_id: str):
     return await delete_bit(bit_id)
 
 
-@require_auth
 @app.put("/bits/<bit_id>")
+@require_auth
 async def update_bit_handler(bit_id: str):
     return await update_bit(bit_id)
 
 
-@require_auth
 @app.get("/bans")
+@require_auth
 async def get_bans_handler():
     return await get_bans()
 
 
-@require_auth
 @app.post("/bans")
+@require_auth
 async def add_ban_handler():
     return await add_ban()
 
 
-@require_auth
 @app.delete("/bans")
+@require_auth
 async def delete_ban_handler():
     return await delete_ban()
 
 
-@require_auth
 @app.put("/bans")
+@require_auth
 async def update_ban_handler():
     return await update_ban()
 
 
-@require_auth
 @app.get("/ratelimits")
+@require_auth
 async def get_ratelimits_handler():
     return await get_ratelimits()
 
 
-@require_auth
 @app.post("/ratelimits")
+@require_auth
 async def add_ratelimit_handler():
     return await add_ratelimit()
 
 
-@require_auth
 @app.delete("/ratelimits")
+@require_auth
 async def delete_ratelimit_handler():
     return await delete_ratelimit()
 
 
-@require_auth
 @app.put("/ratelimits")
+@require_auth
 async def update_ratelimit_handler():
     return await update_ratelimit()
 
