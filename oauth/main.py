@@ -36,7 +36,7 @@ def generate_code_challenge(code_verifier):
 
 def require_auth(f):
     @wraps(f)
-    def decorated_function(request: Request, *args, **kwargs):
+    def decorated_function(*args, **kwargs):
         if request.method == "OPTIONS":
             return f(request, *args, **kwargs)
 
@@ -75,25 +75,25 @@ def require_auth(f):
         user_id = res.json().get("user_id")
         request.user_id = user_id
 
-        return f(request, *args, **kwargs)
+        return f(*args, **kwargs)
 
     return decorated_function
 
 
 @app.route("/callback", methods=["GET"])
 def oauth_callback_req():
-    return oauth_callback(request)
+    return oauth_callback()
 
 
 @app.route("/", methods=["GET"])
 def root_req():
-    return root(request)
+    return root()
 
 
 @require_auth
 @app.route("/refresh", methods=["POST"])
 def refresh_req():
-    return refresh_token(request)
+    return refresh_token()
 
 
 @functions_framework.http
@@ -130,7 +130,7 @@ def before_request_func():
         )
 
 
-def refresh_token(request: Request):
+def refresh_token():
     user_id = request.user_id
 
     db = firestore.Client()
@@ -185,7 +185,7 @@ def refresh_token(request: Request):
     )
 
 
-def oauth_callback(request):
+def oauth_callback():
     code = request.args.get("code")
     state = request.args.get("state")
 
@@ -270,7 +270,7 @@ def oauth_callback(request):
     )
 
 
-def root(_: Request):
+def root():
     code_verifier = generate_code_verifier()
     code_challenge = generate_code_challenge(code_verifier)
     state = secrets.token_urlsafe(32)
