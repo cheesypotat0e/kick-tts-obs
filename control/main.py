@@ -23,7 +23,13 @@ from controllers.settings import (
     update_settings,
 )
 from controllers.status_check import status_check
-from controllers.voices import add_voice, delete_voice, get_voice, update_voice
+from controllers.voices import (
+    add_voice,
+    delete_voice,
+    get_voice,
+    get_voices,
+    update_voice,
+)
 from flask import Flask, Request, Response, request
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -193,10 +199,10 @@ async def delete_admins_handler():
     return await delete_admins()
 
 
-@app.get("/voice")
+@app.get("/voices")
 @require_auth
-async def get_voice_handler():
-    return await get_voice()
+async def get_voices_handler():
+    return await get_voices()
 
 
 @app.get("/voice/<voice_id>")
