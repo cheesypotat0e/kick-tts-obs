@@ -90,8 +90,8 @@ def root_req():
     return root()
 
 
-@require_auth
 @app.route("/refresh", methods=["POST"])
+@require_auth
 def refresh_req():
     return refresh_token()
 
