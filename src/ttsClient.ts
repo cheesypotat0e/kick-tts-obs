@@ -8,6 +8,7 @@ type TTSState = {
   ttsQueue: AsyncQueue<TTSEntry>;
   audio?: Holler;
   processingTTSQueue: boolean;
+  ready: boolean;
 };
 
 type AuthResponse = {
@@ -38,45 +39,62 @@ export class TTSClient {
     ttsQueue: new AsyncQueue<TTSEntry>(),
     audio: undefined,
     processingTTSQueue: false,
+    ready: false,
   };
 
   constructor(private settings: SettingsStore, private holler: Holler) {}
 
   public async init() {
-    const authUrl = this.settings.get("authServiceUrl");
+    return new Promise<void>(async (resolve) => {
+      while (!this.state.ready) {
+        try {
+          const authUrl = this.settings.get("authServiceUrl");
 
-    if (!authUrl) {
-      throw new Error("Auth URL not set");
-    }
+          if (!authUrl) {
+            throw new Error("Auth URL not set");
+          }
 
-    const response = await fetch(`${authUrl}/auth`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        code: this.settings.get("code"),
-      }),
+          const response = await fetch(`${authUrl}/auth`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              code: this.settings.get("code"),
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to authenticate");
+          }
+
+          const data = (await response.json()) as AuthResponse;
+
+          this.settings.set("authToken", data.access_token + "1");
+          this.settings.set("ttsServiceUrl", data.tts_service_url);
+          this.settings.set("userId", data.user_id);
+          this.settings.set("name", data.name);
+
+          const name = this.settings.get("name");
+
+          const { id } = await fetch(
+            `https://kick.com/api/v2/channels/${name}/chatroom`
+          ).then((res) => res.json());
+
+          this.settings.set("roomId", id);
+
+          this.state.ready = true;
+
+          resolve();
+        } catch (error) {
+          console.error(
+            "Error initializing TTS client, retrying in 5 seconds: ",
+            error
+          );
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+        }
+      }
     });
-
-    if (!response.ok) {
-      throw new Error("Failed to authenticate");
-    }
-
-    const data = (await response.json()) as AuthResponse;
-
-    this.settings.set("authToken", data.access_token);
-    this.settings.set("ttsServiceUrl", data.tts_service_url);
-    this.settings.set("userId", data.user_id);
-    this.settings.set("name", data.name);
-
-    const name = this.settings.get("name");
-
-    const { id } = await fetch(
-      `https://kick.com/api/v2/channels/${name}/chatroom`
-    ).then((res) => res.json());
-
-    this.settings.set("roomId", id);
   }
 
   public enqueTTSQueue(message: TTSEntry) {
@@ -94,7 +112,7 @@ export class TTSClient {
           segmentIndex,
         } = message;
 
-        voice.id ??= this.settings.get("ttsVoice");
+        voice.id ??= this.state.ready ? this.settings.get("ttsVoice") : "Brian";
         voice.rate ??= this.settings.get("ttsSpeed");
         voice.volume ??= this.settings.get("ttsVolume");
 

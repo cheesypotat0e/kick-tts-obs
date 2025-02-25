@@ -103,15 +103,9 @@ holler.start();
 
 const ttsClient = new TTSClient(settings, holler);
 
-try {
-  await ttsClient.init();
+ttsClient.init().then(() => {
   settings.saveToLocalStorage();
-} catch (error) {
-  console.error(
-    "Error initializing TTS client falling back to streamelements: ",
-    error
-  );
-}
+});
 
 ttsClient.startTTSQueue();
 
