@@ -73,7 +73,7 @@ def require_auth(f):
             )
 
         user_id = res.json().get("user_id")
-        g["user_id"] = user_id
+        g.user_id = user_id
 
         return f(*args, **kwargs)
 
