@@ -59,10 +59,10 @@ export class KickApiClient {
   }
 
   public async sendMessage(message: string) {
+    console.log(this.settings.get("code"));
     return this.fetch<any>("/public/v1/chat", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${this.settings.get("code")}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({

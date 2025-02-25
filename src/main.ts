@@ -105,6 +105,7 @@ const ttsClient = new TTSClient(settings, holler);
 
 try {
   await ttsClient.init();
+  settings.saveToLocalStorage();
 } catch (error) {
   console.error(
     "Error initializing TTS client falling back to streamelements: ",
