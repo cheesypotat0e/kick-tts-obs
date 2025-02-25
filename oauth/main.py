@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 
 import functions_framework
 import requests
-from flask import Blueprint, Flask, Request, redirect, request
+from flask import Flask, Request, redirect, request
 from google.cloud import firestore
 
 # Load environment variables
@@ -16,11 +16,9 @@ REDIRECT_URI = os.environ.get("KICK_REDIRECT_URI")
 CLIENT_SECRET = os.environ.get("KICK_CLIENT_SECRET")
 AUTH_SERVICE_URL = os.environ.get("AUTH_SERVICE_URL")
 CLIENT_URL = os.environ.get("CLIENT_URL")
-URL_PREFIX = os.environ.get("URL_PREFIX", "/api/oauth")  # Default to /oauth if not set
 
-# Create Flask app and blueprint
+# Create Flask app
 app = Flask(__name__)
-oauth_bp = Blueprint("oauth", __name__, url_prefix=URL_PREFIX)
 
 
 def generate_code_verifier():
@@ -82,18 +80,18 @@ def require_auth(f):
     return decorated_function
 
 
-@oauth_bp.route("/callback", methods=["GET"])
+@app.route("/callback", methods=["GET"])
 def oauth_callback_req():
     return oauth_callback(request)
 
 
-@oauth_bp.route("/", methods=["GET"])
+@app.route("/", methods=["GET"])
 def root_req():
     return root(request)
 
 
 @require_auth
-@oauth_bp.route("/refresh", methods=["POST"])
+@app.route("/refresh", methods=["POST"])
 def refresh_req():
     return refresh_token(request)
 
@@ -298,7 +296,3 @@ def root(_: Request):
         auth_url + "?" + urlencode(params),
         code=302,
     )
-
-
-# Register the blueprint with the app
-app.register_blueprint(oauth_bp)

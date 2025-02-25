@@ -5,7 +5,7 @@ from datetime import datetime
 import functions_framework
 import requests
 from clerk_backend_api import Clerk
-from flask import Blueprint, Flask, Request, Response, request
+from flask import Flask, Request, Response, request
 from google.cloud import firestore
 
 # Initialize Firestore client
@@ -21,7 +21,6 @@ clerk = Clerk(
 )
 
 app = Flask(__name__)
-auth = Blueprint("auth", __name__, url_prefix="/api/auth")
 
 
 @app.before_request
@@ -44,7 +43,7 @@ def after_request_func(response: Response):
     return response
 
 
-@auth.route("/", methods=["GET"])
+@app.get("/")
 def index():
     return (
         {"status": "ok"},
@@ -53,22 +52,22 @@ def index():
     )
 
 
-@auth.route("/code", methods=["GET"])
+@app.get("/code")
 def generate_code_req():
     return generate_code()
 
 
-@auth.route("/validate", methods=["POST"])
+@app.post("/validate")
 def validate_code_req():
     return validate_auth_code()
 
 
-@auth.route("/auth", methods=["POST"])
+@app.post("/auth")
 def auth_req():
     return auth_code()
 
 
-@auth.route("/auth", methods=["DELETE"])
+@app.delete("/auth")
 def revoke_auth_req():
     return revoke_auth()
 
@@ -462,7 +461,3 @@ class ValidationError(Exception):
     def __init__(self, message="Request validation failed"):
         self.message = message
         super().__init__(self.message)
-
-
-# Register the blueprint
-app.register_blueprint(auth)
