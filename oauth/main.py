@@ -149,7 +149,7 @@ def refresh_token():
             "refresh_token": refresh_token,
         },
     )
-    response = response.json()
+
     if response.status_code != 200:
         return (
             {"error": "Failed to refresh token"},
@@ -157,11 +157,13 @@ def refresh_token():
             {"Access-Control-Allow-Origin": "*"},
         )
 
-    access_token = response.get("access_token")
-    token_type = response.get("token_type")
-    refresh_token = response.get("refresh_token")
-    expiry = response.get("expiry")
-    scope = response.get("scope")
+    body = response.json()
+
+    access_token = body.get("access_token")
+    token_type = body.get("token_type")
+    refresh_token = body.get("refresh_token")
+    expiry = body.get("expiry")
+    scope = body.get("scope")
 
     db.collection("users").document(str(user_id)).set(
         {
