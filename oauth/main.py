@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 
 import functions_framework
 import requests
-from flask import Flask, Request, redirect, request
+from flask import Flask, g, redirect, request
 from google.cloud import firestore
 
 # Load environment variables
@@ -73,7 +73,7 @@ def require_auth(f):
             )
 
         user_id = res.json().get("user_id")
-        request.user_id = user_id
+        g.user_id = user_id
 
         return f(*args, **kwargs)
 
@@ -131,7 +131,7 @@ def before_request_func():
 
 
 def refresh_token():
-    user_id = request.user_id
+    user_id = g.user_id
 
     db = firestore.Client()
     doc = db.collection("users").document(str(user_id)).get()
