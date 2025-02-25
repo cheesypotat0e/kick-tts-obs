@@ -1,9 +1,9 @@
-from flask import request
+from flask import g, request
 from google.cloud import firestore
 
 
 async def get_settings():
-    user_id = request.user_id
+    user_id = g.user_id
 
     client = firestore.AsyncClient()
 
@@ -16,7 +16,7 @@ async def get_settings():
 
 
 async def update_settings():
-    user_id = request.user_id
+    user_id = g.user_id
 
     settings = request.json
 
@@ -27,7 +27,7 @@ async def update_settings():
 
 
 async def delete_settings_field():
-    user_id = request.user_id
+    user_id = g.user_id
 
     field = request.json.get("field")
 
@@ -43,7 +43,7 @@ async def delete_settings_field():
 
 
 async def add_voice_to_settings():
-    user_id = request.user_id
+    user_id = g.user_id
 
     voice_id = request.json.get("voice_id")
 
@@ -65,7 +65,7 @@ async def add_voice_to_settings():
 
 
 async def delete_voice_from_settings():
-    user_id = request.user_id
+    user_id = g.user_id
 
     voice_id = request.json.get("voice_id")
 
@@ -82,7 +82,7 @@ async def delete_voice_from_settings():
 
 
 async def add_bit_to_settings():
-    user_id = request.user_id
+    user_id = g.user_id
 
     bit_id = request.json.get("bit_id")
 
@@ -104,7 +104,7 @@ async def add_bit_to_settings():
 
 
 async def delete_bit_from_settings():
-    user_id = request.user_id
+    user_id = g.user_id
 
     bit_id = request.json.get("bit_id")
 

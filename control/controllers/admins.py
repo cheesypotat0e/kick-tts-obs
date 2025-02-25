@@ -1,4 +1,4 @@
-from flask import request
+from flask import g, request
 from google.cloud import firestore
 
 super_admin = "super_admin"
@@ -6,7 +6,7 @@ admin = "admin"
 
 
 async def add_admins():
-    user_id = request.user_id
+    user_id = g.user_id
 
     client = firestore.AsyncClient()
 
@@ -37,7 +37,7 @@ async def add_admins():
 
 
 async def delete_admins():
-    user_id = request.user_id
+    user_id = g.user_id
 
     client = firestore.AsyncClient()
 
@@ -59,7 +59,7 @@ async def delete_admins():
 
 
 async def update_admin():
-    user_id = request.user_id
+    user_id = g.user_id
 
     client = firestore.AsyncClient()
 

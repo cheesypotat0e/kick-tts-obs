@@ -1,9 +1,9 @@
-from flask import request
+from flask import g, request
 from google.cloud import firestore
 
 
 async def get_bans():
-    user_id = request.user_id
+    user_id = g.user_id
 
     client = firestore.AsyncClient()
 
@@ -15,7 +15,7 @@ async def get_bans():
 
 
 async def add_ban():
-    user_id = request.user_id
+    user_id = g.user_id
 
     client = firestore.AsyncClient()
 
@@ -43,7 +43,7 @@ async def add_ban():
 
 
 async def delete_ban():
-    user_id = request.user_id
+    user_id = g.user_id
 
     client = firestore.AsyncClient()
 
@@ -60,7 +60,7 @@ async def delete_ban():
 
 
 async def update_ban():
-    user_id = request.user_id
+    user_id = g.user_id
 
     client = firestore.AsyncClient()
 

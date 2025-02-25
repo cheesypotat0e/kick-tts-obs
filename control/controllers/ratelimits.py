@@ -1,9 +1,9 @@
-from flask import request
+from flask import g, request
 from google.cloud import firestore
 
 
 async def get_ratelimits():
-    user_id = request.user_id
+    user_id = g.user_id
 
     client = firestore.AsyncClient()
 
@@ -18,7 +18,7 @@ async def get_ratelimits():
 
 
 async def add_ratelimit():
-    user_id = request.user_id
+    user_id = g.user_id
 
     client = firestore.AsyncClient()
 
@@ -47,7 +47,7 @@ async def add_ratelimit():
 
 
 async def delete_ratelimit():
-    user_id = request.user_id
+    user_id = g.user_id
 
     client = firestore.AsyncClient()
 
@@ -63,7 +63,7 @@ async def delete_ratelimit():
 
 
 async def update_ratelimit():
-    user_id = request.user_id
+    user_id = g.user_id
 
     client = firestore.AsyncClient()
 

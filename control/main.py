@@ -30,7 +30,7 @@ from controllers.voices import (
     get_voices,
     update_voice,
 )
-from flask import Flask, Request, Response, request
+from flask import Flask, Request, Response, g, request
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "https://api.cheesybot.xyz/api/auth")
@@ -56,7 +56,7 @@ def before_request():
 
 @app.after_request
 def after_request(response: Response):
-    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers["Access-Control-Allow-Origin"] = "*"
     return response
 
 
@@ -95,7 +95,7 @@ def require_auth(f):
             )
 
         user_id = res.json().get("user_id")
-        request.user_id = user_id
+        g.user_id = user_id
 
         return f(*args, **kwargs)
 
