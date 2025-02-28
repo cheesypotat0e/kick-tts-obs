@@ -70,7 +70,7 @@ export class TTSClient {
 
           const data = (await response.json()) as AuthResponse;
 
-          this.settings.set("authToken", data.access_token + "1");
+          this.settings.set("authToken", data.access_token);
           this.settings.set("ttsServiceUrl", data.tts_service_url);
           this.settings.set("userId", data.user_id);
           this.settings.set("name", data.name);

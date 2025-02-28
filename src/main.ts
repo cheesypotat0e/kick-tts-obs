@@ -34,6 +34,7 @@ if (!imgurClientID) {
 const code = params.get("code");
 
 settings.upsertWithParams(params);
+settings.upsertFromLocalStorage();
 
 if (code) {
   const res = await fetch(`${authUrl}/auth`, {
@@ -71,7 +72,6 @@ if (code) {
     params.set("roomId", "88774");
   }
 }
-settings.upsertFromLocalStorage();
 
 const existingVoices = settings.get("voices");
 
