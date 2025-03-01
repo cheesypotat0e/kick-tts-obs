@@ -80,6 +80,11 @@ def require_auth(f):
     return decorated_function
 
 
+@app.get("/healthz")
+def healthz_req():
+    return {"status": "ok"}, 200, {"Access-Control-Allow-Origin": "*"}
+
+
 @app.route("/callback", methods=["GET"])
 def oauth_callback_req():
     return oauth_callback()
