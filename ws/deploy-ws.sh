@@ -1,5 +1,4 @@
 #!/bin/bash
-# Configuration
 REMOTE_USER=$REMOTE_USER
 REMOTE_HOST=$REMOTE_HOST
 REMOTE_DIR="/home/ec2-user/kick-tts"
@@ -14,17 +13,24 @@ if [ ! -f "$BINARY_NAME" ]; then
     exit 1
 fi
 
-# Copy binary to remote server
 echo "Copying files to remote server..."
-scp -o StrictHostKeyChecking=no -i $SSH_KEY $BINARY_NAME $REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR/$BINARY_NAME.new
-scp -o StrictHostKeyChecking=no -i $SSH_KEY $REQUIREMENTS_NAME $REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR/
+
+if [ -n "$SSH_KEY" ]; then
+  echo "Using SSH key for file transfer..."
+  SCP_OPTIONS="-o StrictHostKeyChecking=no -i $SSH_KEY"
+else
+  echo "Using ssh-agent for file transfer..."
+  SCP_OPTIONS="-o StrictHostKeyChecking=no"
+fi
+
+scp $SCP_OPTIONS $BINARY_NAME $REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR/$BINARY_NAME.new
+scp $SCP_OPTIONS $REQUIREMENTS_NAME $REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR/
 
 # SSH into remote server and perform deployment
 echo "Deploying on remote server..."
 ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST << EOF
     set -e # Exit on any error
     cd $REMOTE_DIR
-    ls -la
     python -m pip install -r $REQUIREMENTS_NAME
     
     # Stop the existing service
@@ -44,9 +50,11 @@ Description=WebSocket PubSub Server
 After=network.target
 
 [Service]
+AmbientCapabilities=CAP_NET_BIND_SERVICE
 Type=simple
 User=ec2-user
 WorkingDirectory=/home/ec2-user/kick-tts
+EnvironmentFile=/home/ec2-user/kick-tts/.env
 ExecStart=/usr/bin/python3 main.py
 Restart=always
 
