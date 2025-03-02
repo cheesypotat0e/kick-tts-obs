@@ -44,27 +44,76 @@ export class CdkStack extends cdk.Stack {
     });
 
     const rootResource = api.root;
-    rootResource.addMethod(
+
+    // Main API proxy integration
+    const apiProxyResource = rootResource.addResource("{proxy+}");
+    apiProxyResource.addMethod(
       "ANY",
       new cdk.aws_apigateway.HttpIntegration(apiCloudFunctionUrl, {
         httpMethod: "ANY",
-        proxy: true,
-      })
+        options: {
+          requestParameters: {
+            "integration.request.path.proxy": "method.request.path.proxy",
+          },
+        },
+      }),
+      {
+        requestParameters: {
+          "method.request.path.proxy": true,
+        },
+      }
     );
 
-    rootResource.addResource("auth").addMethod(
+    const authResource = rootResource.addResource("auth");
+    const authProxyResource = authResource.addResource("{proxy+}");
+    authProxyResource.addMethod(
       "ANY",
       new cdk.aws_apigateway.HttpIntegration(authCloudFunctionUrl, {
         httpMethod: "ANY",
-        proxy: true,
+        options: {
+          requestParameters: {
+            "integration.request.path.proxy": "method.request.path.proxy",
+          },
+        },
+      }),
+      {
+        requestParameters: {
+          "method.request.path.proxy": true,
+        },
+      }
+    );
+
+    authResource.addMethod(
+      "ANY",
+      new cdk.aws_apigateway.HttpIntegration(authCloudFunctionUrl, {
+        httpMethod: "ANY",
       })
     );
 
-    rootResource.addResource("oauth").addMethod(
+    const oauthResource = rootResource.addResource("oauth");
+    const oauthProxyResource = oauthResource.addResource("{proxy+}");
+
+    oauthProxyResource.addMethod(
       "ANY",
       new cdk.aws_apigateway.HttpIntegration(oauthCloudFunctionUrl, {
         httpMethod: "ANY",
-        proxy: true,
+        options: {
+          requestParameters: {
+            "integration.request.path.proxy": "method.request.path.proxy",
+          },
+        },
+      }),
+      {
+        requestParameters: {
+          "method.request.path.proxy": true,
+        },
+      }
+    );
+    // Also add a method to the oauth resource itself
+    oauthResource.addMethod(
+      "ANY",
+      new cdk.aws_apigateway.HttpIntegration(oauthCloudFunctionUrl, {
+        httpMethod: "ANY",
       })
     );
 
