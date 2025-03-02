@@ -44,6 +44,7 @@ export enum MessageType {
   removeLimit,
   subonly,
   send,
+  botmsg,
 }
 
 export type BaseMessageOutput = {
@@ -162,6 +163,12 @@ export type MessageParseSendOutput = BaseMessageOutput & {
   content: string;
 };
 
+export type MessageParseBotMsgOutput = BaseMessageOutput & {
+  type: MessageType.botmsg;
+  roomId: string;
+  content: string;
+};
+
 export type MessageParseOutput =
   | MessageParseTTSOutput
   | MessageParseBitOutput
@@ -182,7 +189,8 @@ export type MessageParseOutput =
   | MessageParseAddLimitOutput
   | MessageParseRemoveLimitOutput
   | MessageParseSubOnlyOutput
-  | MessageParseSendOutput;
+  | MessageParseSendOutput
+  | MessageParseBotMsgOutput;
 
 type MessageParseState =
   | "idle"
@@ -205,7 +213,8 @@ type MessageParseState =
   | "addlimit"
   | "removelimit"
   | "subonly"
-  | "send";
+  | "send"
+  | "botmsg";
 
 export type TTSSegment = {
   text: string[];
@@ -647,7 +656,22 @@ export class MessageParser {
       },
       outputTransform: (buffer: typeof this.buffer) => {
         const content = buffer as string[];
+
         return [{ type: MessageType.send, content: content.join(" ") }];
+      },
+      flushOnExit: true,
+    },
+    botmsg: {
+      onToken: (token: string) => {
+        this.buffer.push(token);
+      },
+      outputTransform: (buffer: typeof this.buffer) => {
+        const content = buffer as string[];
+
+        const roomId = content[0];
+        const message = content.slice(1).join(" ");
+
+        return [{ type: MessageType.botmsg, roomId, content: message }];
       },
       flushOnExit: true,
     },
