@@ -42,6 +42,7 @@ export type Settings = {
   authServiceUrl: string;
   oauthServiceUrl: string;
   ttsServiceUrl: string;
+  wsServiceUrl: string;
   subOnly: boolean;
   userId: string;
   name: string;
@@ -84,6 +85,7 @@ export class SettingsStore {
     authServiceUrl: "",
     oauthServiceUrl: "",
     ttsServiceUrl: "",
+    wsServiceUrl: "",
     userId: "",
     name: "",
     bits: new Map([

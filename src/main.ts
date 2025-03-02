@@ -12,6 +12,7 @@ import { ImageClient } from "./image-client.js";
 import { FishVoice, fishVoices } from "./fish-voices.js";
 import { RateLimiter } from "./rate-limit.js";
 import { KickApiClient } from "./kick-api-client.js";
+import { WsClient } from "./ws-client.js";
 
 const url = new URL(window.location.href);
 
@@ -49,6 +50,7 @@ if (code) {
 
   settings.set("userId", data.user_id);
   settings.set("name", data.name);
+  settings.set("wsServiceUrl", data.ws_service_url);
 
   const name = settings.get("name");
 
@@ -126,6 +128,35 @@ const authorizer = new Authorizer(settings);
 const rateLimiter = new RateLimiter(settings.get("rateLimits").entries());
 
 const kickApiClient = new KickApiClient(settings);
+
+const ws = new WsClient(settings.get("wsServiceUrl") + roomsID);
+
+ws.onOpen(async () => {
+  holler.enqueue({
+    data: Promise.resolve("https://www.myinstants.com/media/sounds/bep.mp3"),
+    options: {
+      volume: 0.5,
+      html5: true,
+      rate: 1,
+    },
+    messageIndex: 0,
+    segmentIndex: 0,
+  });
+});
+
+ws.onMessage(async (message) => {
+  try {
+    const data = JSON.parse(message);
+
+    if (data.type === "bot-message") {
+      await kickApiClient.sendMessage(data.message);
+    }
+  } catch (error) {
+    console.error("Error processing message: ", error);
+  }
+});
+
+ws.start();
 
 let messageIndex = 0;
 
