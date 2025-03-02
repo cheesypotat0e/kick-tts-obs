@@ -11,5 +11,4 @@ export default {
       },
     },
   },
-  base: "/kick-tts-obs/",
 } satisfies UserConfig;
