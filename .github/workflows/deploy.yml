@@ -150,6 +150,29 @@ jobs:
             --allow-unauthenticated \
             --quiet
 
+  # deploy-ws:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+
+  #     - name: Setup SSH
+  #       uses: webfactory/ssh-agent@v0.9.0
+  #       with:
+  #         ssh-private-key: ${{ secrets.SSH_KEY }}
+
+  #     - name: Run Deploy Script
+  #       working-directory: ./ws
+  #       run: |
+  #         ./deploy-ws.sh
+  #       env:
+  #         REMOTE_USER: ${{ vars.REMOTE_USER }}
+  #         REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+  #         REMOTE_DIR: ${{ vars.REMOTE_DIR }}
+  #         BINARY_NAME: ${{ vars.BINARY_NAME }}
+  #         REQUIREMENTS_NAME: ${{ vars.REQUIREMENTS_NAME }}
+  #         SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+
   deploy:
     environment:
       name: github-pages
@@ -173,6 +196,10 @@ jobs:
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
           VITE_AUTH_URL: ${{ vars.VITE_AUTH_URL }}
           VITE_OAUTH_URL: ${{ vars.VITE_OAUTH_URL }}
+
+      - name: Create CNAME file
+        run: |
+          echo "cheesybot.xyz" > ./dist/CNAME
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
