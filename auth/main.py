@@ -15,6 +15,7 @@ db = firestore.Client()
 PRIVATE_KEY = os.environ.get("PRIVATE_KEY")
 PUBLIC_KEY = os.environ.get("PUBLIC_KEY")
 TTS_SERVICE_URL = os.environ.get("TTS_SERVICE_URL")
+WS_SERVICE_URL = os.environ.get("WS_SERVICE_URL")
 
 clerk = Clerk(
     bearer_auth=os.environ.get("CLERK_SECRET_KEY"),
@@ -43,13 +44,14 @@ def after_request_func(response: Response):
     return response
 
 
+@app.get("/healthz")
+def healthz_req():
+    return {"status": "ok"}, 200, {"Access-Control-Allow-Origin": "*"}
+
+
 @app.get("/")
-def index():
-    return (
-        {"status": "ok"},
-        200,
-        {"Access-Control-Allow-Origin": "*"},
-    )
+def root():
+    return {"status": "ok"}, 200, {"Access-Control-Allow-Origin": "*"}
 
 
 @app.get("/code")
@@ -312,6 +314,7 @@ def auth_code():
             "expiry": expiry,
             "scope": scope,
             "tts_service_url": TTS_SERVICE_URL,
+            "ws_service_url": WS_SERVICE_URL,
             "user_id": user_id,
             "name": user_name,
         },
