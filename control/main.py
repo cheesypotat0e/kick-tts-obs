@@ -338,15 +338,15 @@ async def update_ratelimit_handler():
 
 
 @functions_framework.http
-async def main(request: Request):
+def main(request: Request):
     with app.request_context(request.environ):
         try:
-            rv = await app.preprocess_request()
+            rv = app.preprocess_request()
             if rv is None:
-                rv = await app.dispatch_request()
-            response = await app.make_response(rv)
-            return await app.process_response(response)
+                rv = app.dispatch_request()
+            response = app.make_response(rv)
+            return app.process_response(response)
         except Exception as e:
-            rv = await app.handle_user_exception(e)
-            response = await app.make_response(rv)
-            return await app.process_response(response)
+            rv = app.handle_user_exception(e)
+            response = app.make_response(rv)
+            return app.process_response(response)
