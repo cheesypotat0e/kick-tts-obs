@@ -21,7 +21,7 @@ async def update_settings():
     settings = request.json
 
     client = firestore.AsyncClient()
-    await client.collection("settings").document(user_id).update(settings)
+    await client.collection("settings").document(user_id).set(settings, merge=True)
 
     return {"message": "Settings updated"}, 200
 

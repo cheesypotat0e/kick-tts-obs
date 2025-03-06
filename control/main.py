@@ -2,8 +2,11 @@ import os
 from functools import wraps
 
 import functions_framework
+import httpx
 import jwt
-import requests
+from flask import Flask, Request, Response, g, request
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 from controllers.admins import add_admins, delete_admins
 from controllers.bans import add_ban, delete_ban, get_bans, update_ban
 from controllers.bits import add_bit, delete_bit, get_bit, get_bits, update_bit
@@ -30,18 +33,25 @@ from controllers.voices import (
     get_voices,
     update_voice,
 )
-from flask import Flask, Request, Response, g, request
-from werkzeug.middleware.proxy_fix import ProxyFix
+from ws.ws_client import WSClient
 
-AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "https://api.cheesybot.xyz/api/auth")
+AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL")
+
 JWT_PUBLIC_KEY = os.getenv("JWT_PUBLIC_KEY")
+
+WS_SERVICE_URL = os.getenv("WS_SERVICE_URL")
+
+JWT_PRIVATE_KEY = os.getenv("JWT_PRIVATE_KEY")
+
 
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
+# ws_client = WSClient(WS_SERVICE_URL, JWT_PRIVATE_KEY)
+
 
 @app.before_request
-def before_request():
+async def before_request():
     if request.method == "OPTIONS":
         return (
             "",
@@ -55,16 +65,16 @@ def before_request():
 
 
 @app.after_request
-def after_request(response: Response):
+async def after_request(response: Response):
     response.headers["Access-Control-Allow-Origin"] = "*"
     return response
 
 
 def require_auth(f):
     @wraps(f)
-    def decorated_function(*args, **kwargs):
+    async def decorated_function(*args, **kwargs):
         if request.method == "OPTIONS":
-            return f(*args, **kwargs)
+            return await f(*args, **kwargs)
 
         token = request.headers.get("Authorization")
         if not token:
@@ -81,32 +91,33 @@ def require_auth(f):
                 401,
             )
 
-        res = requests.post(f"{AUTH_SERVICE_URL}/validate", json={"code": code})
+        async with httpx.AsyncClient() as client:
+            res = await client.post(f"{AUTH_SERVICE_URL}/validate", json={"code": code})
 
-        if res.status_code == 400:
-            return (
-                {"error": "Missing or invalid authorization header"},
-                401,
-            )
-        if res.status_code == 401:
-            return (
-                {"error": "Unauthorized"},
-                401,
-            )
+            if res.status_code == 400:
+                return (
+                    {"error": "Missing or invalid authorization header"},
+                    401,
+                )
+            if res.status_code == 401:
+                return (
+                    {"error": "Unauthorized"},
+                    401,
+                )
 
-        user_id = res.json().get("user_id")
-        g.user_id = user_id
+            user_id = res.json().get("user_id")
+            g.user_id = user_id
 
-        return f(*args, **kwargs)
+            return await f(*args, **kwargs)
 
     return decorated_function
 
 
 def require_super_admin(f):
     @wraps(f)
-    def decorated_function(*args, **kwargs):
+    async def decorated_function(*args, **kwargs):
         if request.method == "OPTIONS":
-            return f(*args, **kwargs)
+            return await f(*args, **kwargs)
 
         token = request.headers.get("Authorization")
         if not token:
@@ -135,9 +146,14 @@ def require_super_admin(f):
                 401,
             )
 
-        return f(*args, **kwargs)
+        return await f(*args, **kwargs)
 
     return decorated_function
+
+
+@app.get("/healthz")
+async def healthz_req():
+    return await status_check()
 
 
 @app.get("/")
@@ -308,12 +324,12 @@ async def update_ratelimit_handler():
 
 
 @functions_framework.http
-def main(request: Request):
+async def main(request: Request):
     with app.request_context(request.environ):
         try:
             rv = app.preprocess_request()
             if rv is None:
-                rv = app.dispatch_request()
+                rv = await app.dispatch_request()
         except Exception as e:
             rv = app.handle_user_exception(e)
         response = app.make_response(rv)
