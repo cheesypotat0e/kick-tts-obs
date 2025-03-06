@@ -5,10 +5,12 @@ const apiCloudFunctionUrl = process.env.API_CLOUD_FUNCTION_URL ?? "";
 const authCloudFunctionUrl = process.env.AUTH_CLOUD_FUNCTION_URL ?? "";
 const oauthCloudFunctionUrl = process.env.OAUTH_CLOUD_FUNCTION_URL ?? "";
 const ttsCloudFunctionUrl = process.env.TTS_CLOUD_FUNCTION_URL ?? "";
+
 export class CdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    // TTS API Gateway (kept separate as requested)
     const tts = new cdk.aws_apigateway.RestApi(this, "CheesyBotTtsApi", {
       restApiName: "CheesyBot TTS API",
       description: "API Gateway for CheesyBot TTS",
@@ -30,6 +32,7 @@ export class CdkStack extends cdk.Stack {
       })
     );
 
+    // Main API Gateway
     const api = new cdk.aws_apigateway.RestApi(this, "CheesyBotRestApi", {
       restApiName: "CheesyBot API",
       description: "API Gateway for CheesyBot",
@@ -46,10 +49,11 @@ export class CdkStack extends cdk.Stack {
     const rootResource = api.root;
 
     // Main API proxy integration
-    const apiProxyResource = rootResource.addResource("{proxy+}");
+    const apiResource = rootResource.addResource("api");
+    const apiProxyResource = apiResource.addResource("{proxy+}");
     apiProxyResource.addMethod(
       "ANY",
-      new cdk.aws_apigateway.HttpIntegration(apiCloudFunctionUrl, {
+      new cdk.aws_apigateway.HttpIntegration(`${apiCloudFunctionUrl}/{proxy}`, {
         httpMethod: "ANY",
         options: {
           requestParameters: {
@@ -64,18 +68,22 @@ export class CdkStack extends cdk.Stack {
       }
     );
 
+    // Auth integration
     const authResource = rootResource.addResource("auth");
     const authProxyResource = authResource.addResource("{proxy+}");
     authProxyResource.addMethod(
       "ANY",
-      new cdk.aws_apigateway.HttpIntegration(authCloudFunctionUrl, {
-        httpMethod: "ANY",
-        options: {
-          requestParameters: {
-            "integration.request.path.proxy": "method.request.path.proxy",
+      new cdk.aws_apigateway.HttpIntegration(
+        `${authCloudFunctionUrl}/{proxy}`,
+        {
+          httpMethod: "ANY",
+          options: {
+            requestParameters: {
+              "integration.request.path.proxy": "method.request.path.proxy",
+            },
           },
-        },
-      }),
+        }
+      ),
       {
         requestParameters: {
           "method.request.path.proxy": true,
@@ -83,6 +91,30 @@ export class CdkStack extends cdk.Stack {
       }
     );
 
+    // OAuth integration
+    const oauthResource = rootResource.addResource("oauth");
+    const oauthProxyResource = oauthResource.addResource("{proxy+}");
+    oauthProxyResource.addMethod(
+      "ANY",
+      new cdk.aws_apigateway.HttpIntegration(
+        `${oauthCloudFunctionUrl}/{proxy}`,
+        {
+          httpMethod: "ANY",
+          options: {
+            requestParameters: {
+              "integration.request.path.proxy": "method.request.path.proxy",
+            },
+          },
+        }
+      ),
+      {
+        requestParameters: {
+          "method.request.path.proxy": true,
+        },
+      }
+    );
+
+    // Add root path methods without proxy parameters
     authResource.addMethod(
       "ANY",
       new cdk.aws_apigateway.HttpIntegration(authCloudFunctionUrl, {
@@ -90,26 +122,13 @@ export class CdkStack extends cdk.Stack {
       })
     );
 
-    const oauthResource = rootResource.addResource("oauth");
-    const oauthProxyResource = oauthResource.addResource("{proxy+}");
-
-    oauthProxyResource.addMethod(
+    apiResource.addMethod(
       "ANY",
-      new cdk.aws_apigateway.HttpIntegration(oauthCloudFunctionUrl, {
+      new cdk.aws_apigateway.HttpIntegration(apiCloudFunctionUrl, {
         httpMethod: "ANY",
-        options: {
-          requestParameters: {
-            "integration.request.path.proxy": "method.request.path.proxy",
-          },
-        },
-      }),
-      {
-        requestParameters: {
-          "method.request.path.proxy": true,
-        },
-      }
+      })
     );
-    // Also add a method to the oauth resource itself
+
     oauthResource.addMethod(
       "ANY",
       new cdk.aws_apigateway.HttpIntegration(oauthCloudFunctionUrl, {
@@ -120,6 +139,11 @@ export class CdkStack extends cdk.Stack {
     new cdk.CfnOutput(this, "ApiUrl", {
       value: api.url,
       description: "URL of the API Gateway",
+    });
+
+    new cdk.CfnOutput(this, "TtsApiUrl", {
+      value: tts.url,
+      description: "URL of the TTS API Gateway",
     });
   }
 }
