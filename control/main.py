@@ -344,7 +344,9 @@ async def main(request: Request):
             rv = await app.preprocess_request()
             if rv is None:
                 rv = await app.dispatch_request()
+            response = await app.make_response(rv)
+            return await app.process_response(response)
         except Exception as e:
             rv = await app.handle_user_exception(e)
-        response = await app.make_response(rv)
-        return await app.process_response(response)
+            response = await app.make_response(rv)
+            return await app.process_response(response)
