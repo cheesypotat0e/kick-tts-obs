@@ -1,8 +1,6 @@
-# Simple workflow for deploying static content to GitHub Pages
 name: Deploy static content to Pages
 
 on:
-  # Runs on pushes targeting the default branch
   push:
     branches: [main]
 
@@ -138,6 +136,11 @@ jobs:
         with:
           credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
 
+      - name: Test
+        working-directory: ./control
+        run: |
+          python -m pytest -v ./test
+
       - name: Deploy Control Function
         run: |
           gcloud functions deploy api-control \
@@ -212,3 +215,32 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+deploy-cdk:
+  runs-on: ubuntu-latest
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
+        run_install: true
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-west-2
+
+    - name: Run Build
+      working-directory: ./cdk
+      run: |
+        pnpm run build
+
+    - name: Deploy CDK
+      working-directory: ./cdk
+      run: |
+        pnpm run deploy --require-approval never
