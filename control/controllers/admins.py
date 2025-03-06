@@ -15,23 +15,31 @@ async def add_admins():
     if not admins:
         return {"error": "Admins are required"}, 400
 
+    if not isinstance(admins, (dict, list)):
+        return {"error": "Admins must be a list or a single object"}, 400
+
+    if isinstance(admins, dict):
+        admins = [admins]
+
     for admin in admins:
         username = admin.get("username", "")
-        user_id = admin.get("user_id", "")
+        target_user_id = admin.get("user_id", "")
         admin_type = admin.get("admin_type", admin)
 
         if (
             not username
-            or not user_id
+            or not target_user_id
             or not isinstance(username, str)
-            or not isinstance(user_id, str)
+            or not isinstance(target_user_id, str)
             or not isinstance(admin_type, str)
         ):
             return {"error": "Username and user_id must be strings"}, 400
 
         await client.collection("settings").document(user_id).collection(
             "admins"
-        ).document(username).set({"username": username, "user_id": user_id})
+        ).document(target_user_id).set(
+            {"username": username, "user_id": target_user_id, "admin_type": admin_type}
+        )
 
     return {"message": "Admins added"}, 200
 
@@ -46,19 +54,37 @@ async def delete_admins():
     if not admins:
         return {"error": "Admins are required"}, 400
 
-    for admin in admins:
-        if not isinstance(admin, str):
-            return {"error": "Admin must be a string"}, 400
+    if not isinstance(admins, (dict, list)):
+        return {"error": "Admins must be a list or a single object"}, 400
+
+    if isinstance(admins, dict):
+        admins = [admins]
 
     for admin in admins:
-        await client.collection("settings").document(user_id).collection(
-            "admins"
-        ).document(admin).delete()
+
+        target_user_id = admin.get("user_id")
+
+        if not target_user_id or not isinstance(target_user_id, str):
+            return {"error": "User ID is required and must be a string"}, 400
+
+        admin_doc_ref = (
+            client.collection("settings")
+            .document(user_id)
+            .collection("admins")
+            .document(target_user_id)
+        )
+
+        admin_ref = await admin_doc_ref.get()
+
+        if not admin_ref.exists:
+            return {"error": "Admin not found"}, 404
+
+        await admin_doc_ref.delete()
 
     return {"message": "Admins deleted"}, 200
 
 
-async def update_admin():
+async def update_admins():
     user_id = g.user_id
 
     client = firestore.AsyncClient()
@@ -67,24 +93,54 @@ async def update_admin():
     if not admins:
         return {"error": "Admins are required"}, 400
 
-    user_id_value = admins.get("user_id")
-    admin_type = admins.get("admin_type")
+    if not isinstance(admins, (dict, list)):
+        return {"error": "Admins must be a list or a single object"}, 400
+
+    if isinstance(admins, dict):
+        admins = [admins]
 
     for admin in admins:
+        target_user_id = admin.get("user_id")
+        admin_type = admin.get("admin_type")
 
-        if not user_id_value or not isinstance(user_id_value, str):
+        if not target_user_id or not isinstance(target_user_id, str):
             return {"error": "User ID is required and must be a string"}, 400
 
-        if not admin_type or not isinstance(admin_type, str):
+        if (
+            not admin_type
+            or not isinstance(admin_type, str)
+            or admin_type
+            not in [
+                super_admin,
+                admin,
+            ]
+        ):
             return {"error": "Admin type is required and must be a string"}, 400
 
-    for admin in admins:
-        admin_ref = (
+        admin_doc_ref = (
             client.collection("settings")
             .document(user_id)
             .collection("admins")
-            .document(user_id_value)
-            .update({"admin_type": admin_type})
+            .document(target_user_id)
         )
 
+        admin_ref = await admin_doc_ref.get()
+
+        if not admin_ref.exists:
+            return {"error": "Admin not found"}, 404
+
+        await admin_doc_ref.update({"admin_type": admin_type})
+
     return {"message": "Admins updated"}, 200
+
+
+async def get_admins():
+    user_id = g.user_id
+
+    client = firestore.AsyncClient()
+
+    admins = (
+        await client.collection("settings").document(user_id).collection("admins").get()
+    )
+
+    return [admin.to_dict() for admin in admins], 200

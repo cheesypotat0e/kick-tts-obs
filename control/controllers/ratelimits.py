@@ -35,7 +35,7 @@ async def add_ratelimit():
         return {"error": "Limit is required"}, 400
 
     ref = (
-        await client.collection("settings")
+        client.collection("settings")
         .document(user_id)
         .collection("rateLimits")
         .document(target_user_id)
@@ -79,8 +79,18 @@ async def update_ratelimit():
     if not limit or not isinstance(limit, int):
         return {"error": "Limit is required"}, 400
 
-    await client.collection("settings").document(user_id).collection(
-        "rateLimits"
-    ).document(target_user_id).update(request.json)
+    ref = (
+        client.collection("settings")
+        .document(user_id)
+        .collection("rateLimits")
+        .document(target_user_id)
+    )
+
+    doc = await ref.get()
+
+    if not doc.exists:
+        return {"error": "Ratelimit not found"}, 404
+
+    await ref.update(request.json)
 
     return {"message": "Ratelimit updated"}, 200

@@ -12,7 +12,25 @@ async def get_settings():
     if not settings.exists:
         return {"error": "Settings not found"}, 404
 
-    return settings.to_dict()
+    res = settings.to_dict()
+
+    res["voices"] = [
+        voice.to_dict()
+        for voice in await client.collection("settings")
+        .document(user_id)
+        .collection("voices")
+        .get()
+    ]
+
+    res["bits"] = [
+        bit.to_dict()
+        for bit in await client.collection("settings")
+        .document(user_id)
+        .collection("bits")
+        .get()
+    ]
+
+    return res
 
 
 async def update_settings():
@@ -85,6 +103,7 @@ async def add_bit_to_settings():
     user_id = g.user_id
 
     bit_id = request.json.get("bit_id")
+    volume = request.json.get("volume") or 1.0
 
     if not bit_id:
         return {"error": "Bit ID is required"}, 400
@@ -98,7 +117,7 @@ async def add_bit_to_settings():
 
     await client.collection("settings").document(user_id).collection("bits").document(
         bit_id
-    ).set(bit.to_dict())
+    ).set({"url": bit.get("url"), "volume": volume})
 
     return {"message": "Bit added to settings"}, 200
 

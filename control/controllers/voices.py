@@ -49,9 +49,9 @@ async def add_voice():
 
     voice = {"key": key}
 
-    voice_name = request.json.get("voiceName")
+    voice_name = request.json.get("voice_name")
     if voice_name:
-        voice["voiceName"] = voice_name
+        voice["voice_name"] = voice_name
 
     platform = request.json.get("platform")
     if platform:
@@ -65,7 +65,7 @@ async def add_voice():
     if code:
         voice["code"] = code
 
-    await client.collection("voices").document().set(voice)
+    await client.collection("voices").document(key).set(voice)
 
     return {"message": "Voice created"}, 201
 

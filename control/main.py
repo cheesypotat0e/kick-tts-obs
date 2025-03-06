@@ -4,11 +4,8 @@ from functools import wraps
 import functions_framework
 import httpx
 import jwt
-from flask import Flask, Request, Response, g, request
-from werkzeug.middleware.proxy_fix import ProxyFix
-
-from controllers.admins import add_admins, delete_admins
-from controllers.bans import add_ban, delete_ban, get_bans, update_ban
+from controllers.admins import add_admins, delete_admins, get_admins, update_admins
+from controllers.bans import add_ban, delete_ban, get_ban, get_bans, update_ban
 from controllers.bits import add_bit, delete_bit, get_bit, get_bits, update_bit
 from controllers.ratelimits import (
     add_ratelimit,
@@ -33,7 +30,8 @@ from controllers.voices import (
     get_voices,
     update_voice,
 )
-from ws.ws_client import WSClient
+from flask import Flask, Request, Response, g, request
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL")
 
@@ -203,50 +201,60 @@ async def delete_bit_from_settings_handler():
     return await delete_bit_from_settings()
 
 
-@app.post("/admins")
+@app.get("/settings/admins")
+@require_auth
+async def get_admins_handler():
+    return await get_admins()
+
+
+@app.post("/settings/admins")
 @require_auth
 async def add_admins_handler():
     return await add_admins()
 
 
-@app.delete("/admins")
+@app.put("/settings/admins")
+@require_auth
+async def update_admins_handler():
+    return await update_admins()
+
+
+@app.delete("/settings/admins")
 @require_auth
 async def delete_admins_handler():
     return await delete_admins()
 
 
 @app.get("/voices")
-@require_auth
 async def get_voices_handler():
     return await get_voices()
 
 
-@app.get("/voice/<voice_id>")
+@app.get("/voices/<voice_id>")
 @require_auth
 async def get_voice_by_id_handler(voice_id: str):
     return await get_voice(voice_id)
 
 
-@app.post("/voice")
+@app.post("/voices")
 @require_auth
 async def add_voice_handler():
     return await add_voice()
 
 
-@app.put("/voice/<voice_id>")
+@app.put("/voices/<voice_id>")
 @require_auth
 async def update_voice_handler(voice_id: str):
     return await update_voice(voice_id)
 
 
-@app.delete("/voice/<voice_id>")
+@app.delete("/voices/<voice_id>")
 @require_auth
 async def delete_voice_handler(voice_id: str):
     return await delete_voice(voice_id)
 
 
 @app.get("/bits")
-@require_auth
 async def get_bits_handler():
     return await get_bits()
 
@@ -275,49 +283,55 @@ async def update_bit_handler(bit_id: str):
     return await update_bit(bit_id)
 
 
-@app.get("/bans")
+@app.get("/settings/bans")
 @require_auth
 async def get_bans_handler():
     return await get_bans()
 
 
-@app.post("/bans")
+@app.get("/settings/bans/<target_user_id>")
+@require_auth
+async def get_ban_handler(target_user_id: str):
+    return await get_ban(target_user_id)
+
+
+@app.post("/settings/bans")
 @require_auth
 async def add_ban_handler():
     return await add_ban()
 
 
-@app.delete("/bans")
+@app.delete("/settings/bans")
 @require_auth
 async def delete_ban_handler():
     return await delete_ban()
 
 
-@app.put("/bans")
+@app.put("/settings/bans")
 @require_auth
 async def update_ban_handler():
     return await update_ban()
 
 
-@app.get("/ratelimits")
+@app.get("/settings/ratelimits")
 @require_auth
 async def get_ratelimits_handler():
     return await get_ratelimits()
 
 
-@app.post("/ratelimits")
+@app.post("/settings/ratelimits")
 @require_auth
 async def add_ratelimit_handler():
     return await add_ratelimit()
 
 
-@app.delete("/ratelimits")
+@app.delete("/settings/ratelimits")
 @require_auth
 async def delete_ratelimit_handler():
     return await delete_ratelimit()
 
 
-@app.put("/ratelimits")
+@app.put("/settings/ratelimits")
 @require_auth
 async def update_ratelimit_handler():
     return await update_ratelimit()
@@ -327,10 +341,10 @@ async def update_ratelimit_handler():
 async def main(request: Request):
     with app.request_context(request.environ):
         try:
-            rv = app.preprocess_request()
+            rv = await app.preprocess_request()
             if rv is None:
                 rv = await app.dispatch_request()
         except Exception as e:
-            rv = app.handle_user_exception(e)
-        response = app.make_response(rv)
-        return app.process_response(response)
+            rv = await app.handle_user_exception(e)
+        response = await app.make_response(rv)
+        return await app.process_response(response)

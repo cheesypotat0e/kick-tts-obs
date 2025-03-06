@@ -14,6 +14,25 @@ async def get_bans():
     return [ban.to_dict() for ban in bans]
 
 
+async def get_ban(target_user_id: str):
+    user_id = g.user_id
+
+    client = firestore.AsyncClient()
+
+    ban = (
+        await client.collection("settings")
+        .document(user_id)
+        .collection("bans")
+        .document(target_user_id)
+        .get()
+    )
+
+    if not ban.exists:
+        return {"error": "Ban not found"}, 404
+
+    return ban.to_dict()
+
+
 async def add_ban():
     user_id = g.user_id
 
@@ -28,16 +47,17 @@ async def add_ban():
     if not isinstance(expiration, int):
         return {"error": "Expiration must be an integer"}, 400
 
-    if expiration >= -1:
+    if expiration < -1:
         return {"error": "Expiration must be greater than or equal to -1"}, 400
 
     ref = (
-        await client.collection("settings")
+        client.collection("settings")
         .document(user_id)
         .collection("bans")
-        .document()
-        .set(request.json)
+        .document(target_user_id)
     )
+
+    await ref.set({"expiration": expiration})
 
     return {"id": ref.id, "message": "Ban added"}, 201
 
@@ -70,12 +90,14 @@ async def update_ban():
     if not target_user_id or not isinstance(target_user_id, str):
         return {"error": "User ID is required and must be a string"}, 400
 
-    if not not expiration or isinstance(expiration, int):
+    if not expiration or not isinstance(expiration, int):
         return {"error": "Expiration must be an integer"}, 400
 
-    if expiration >= -1:
+    if expiration < -1:
         return {"error": "Expiration must be greater than or equal to -1"}, 400
 
     await client.collection("settings").document(user_id).collection("bans").document(
         target_user_id
-    ).update(request.json)
+    ).update({"expiration": expiration})
+
+    return {"message": "Ban updated"}, 200
