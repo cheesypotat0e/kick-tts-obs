@@ -243,4 +243,4 @@ jobs:
       - name: Deploy CDK
         working-directory: ./cdk
         run: |
-          pnpm run deploy --require-approval never
+          pnpm cdk deploy --require-approval never
