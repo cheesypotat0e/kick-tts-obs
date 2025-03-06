@@ -45,13 +45,18 @@ async def add_bit():
     client = firestore.AsyncClient()
 
     url = request.json.get("url")
+    name = request.json.get("name")
 
     if not url or not isinstance(url, str):
         return {"error": "URL is required and must be a string"}, 400
 
+    if not name or not isinstance(name, str):
+        return {"error": "Name is required and must be a string"}, 400
+
     bit = {}
 
     bit["url"] = url
+    bit["name"] = name
 
     res = await client.collection("bits").add(bit)
 
@@ -89,9 +94,9 @@ def verify_bit_input(key: str):
     if not url or not isinstance(url, str):
         return (False, ({"error": "URL is required and must be a string"}, 400))
 
-    volume = request.json.get("volume")
-    if not isinstance(volume, (int, float)):
-        return (False, ({"error": "Volume must be a number"}, 400))
+    name = request.json.get("name")
+    if name and not isinstance(name, str):
+        return (False, ({"error": "Name is required and must be a string"}, 400))
 
     return (True, None)
 
