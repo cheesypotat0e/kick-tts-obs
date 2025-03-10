@@ -226,7 +226,7 @@ jobs:
         with:
           version: 9
           run_install: true
-          run_install_recursive: false
+          run_install.recursive: false
 
       - name: Run Build
         run: |
