@@ -290,7 +290,7 @@ jobs:
         run: |
           pnpm cdk deploy --require-approval never
         env:
-          API_CLOUD_FUNCTION_URL: ${{ vars.API_CLOUD_FUNCTION_URL }}
-          AUTH_CLOUD_FUNCTION_URL: ${{ vars.AUTH_CLOUD_FUNCTION_URL }}
-          OAUTH_CLOUD_FUNCTION_URL: ${{ vars.OAUTH_CLOUD_FUNCTION_URL }}
-          TTS_CLOUD_FUNCTION_URL: ${{ vars.TTS_CLOUD_FUNCTION_URL }}
+          API_CLOUD_FUNCTION_URL: ${{ secrets.API_CLOUD_FUNCTION_URL }}
+          AUTH_CLOUD_FUNCTION_URL: ${{ secrets.AUTH_CLOUD_FUNCTION_URL }}
+          OAUTH_CLOUD_FUNCTION_URL: ${{ secrets.OAUTH_CLOUD_FUNCTION_URL }}
+          TTS_CLOUD_FUNCTION_URL: ${{ secrets.TTS_CLOUD_FUNCTION_URL }}
