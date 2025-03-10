@@ -172,6 +172,9 @@ jobs:
         with:
           credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
 
+      - name: Install dependencies
+        run: pnpm install
+
       - name: Build
         run: pnpm run build
 
