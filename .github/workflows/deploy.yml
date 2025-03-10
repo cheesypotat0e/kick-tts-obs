@@ -153,6 +153,39 @@ jobs:
             --allow-unauthenticated \
             --quiet
 
+  deploy-kick-api-function:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./kick-api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Deploy
+        run: |
+          gcloud functions deploy kick-api-proxy \
+            --gen2 \
+            --runtime=nodejs18 \
+            --region=us-west1 \
+            --source=. \
+            --entry-point=kickChatroomApi \
+            --trigger-http \
+            --allow-unauthenticated \
+            --quiet
   # deploy-ws:
   #   runs-on: ubuntu-latest
   #   steps:
