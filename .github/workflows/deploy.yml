@@ -225,7 +225,8 @@ jobs:
         uses: pnpm/action-setup@v4
         with:
           version: 9
-          run_install: true
+          run_install:
+            recursive: false
 
       - name: Run Build
         run: |
@@ -254,17 +255,23 @@ jobs:
 
   deploy-cdk:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./cdk
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup pnpm
+        working-directory: ./cdk
         uses: pnpm/action-setup@v4
         with:
           version: 9
-          run_install: true
+          run_install:
+            recursive: false
 
       - name: Configure AWS Credentials
+        working-directory: ./cdk
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
