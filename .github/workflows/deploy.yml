@@ -165,7 +165,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10
           run_install: |
             - recursive: false
 
@@ -173,9 +173,6 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
-
-      - name: Install dependencies
-        run: pnpm install
 
       - name: Build
         run: pnpm run build
@@ -226,7 +223,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10
           run_install: |
             - recursive: false
 
@@ -263,12 +260,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup pnpm
         working-directory: ./cdk
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10
           run_install: |
             - recursive: false
 
