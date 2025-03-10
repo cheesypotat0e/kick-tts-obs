@@ -289,3 +289,8 @@ jobs:
         working-directory: ./cdk
         run: |
           pnpm cdk deploy --require-approval never
+        env:
+          API_CLOUD_FUNCTION_URL: ${{ vars.API_CLOUD_FUNCTION_URL }}
+          AUTH_CLOUD_FUNCTION_URL: ${{ vars.AUTH_CLOUD_FUNCTION_URL }}
+          OAUTH_CLOUD_FUNCTION_URL: ${{ vars.OAUTH_CLOUD_FUNCTION_URL }}
+          TTS_CLOUD_FUNCTION_URL: ${{ vars.TTS_CLOUD_FUNCTION_URL }}
