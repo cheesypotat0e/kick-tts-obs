@@ -1,10 +1,20 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 
-const apiCloudFunctionUrl = process.env.API_CLOUD_FUNCTION_URL ?? "";
-const authCloudFunctionUrl = process.env.AUTH_CLOUD_FUNCTION_URL ?? "";
-const oauthCloudFunctionUrl = process.env.OAUTH_CLOUD_FUNCTION_URL ?? "";
-const ttsCloudFunctionUrl = process.env.TTS_CLOUD_FUNCTION_URL ?? "";
+const stripTrailingSlash = (url: string) => url.replace(/\/$/, "");
+
+const apiCloudFunctionUrl = stripTrailingSlash(
+  process.env.API_CLOUD_FUNCTION_URL ?? ""
+);
+const authCloudFunctionUrl = stripTrailingSlash(
+  process.env.AUTH_CLOUD_FUNCTION_URL ?? ""
+);
+const oauthCloudFunctionUrl = stripTrailingSlash(
+  process.env.OAUTH_CLOUD_FUNCTION_URL ?? ""
+);
+const ttsCloudFunctionUrl = stripTrailingSlash(
+  process.env.TTS_CLOUD_FUNCTION_URL ?? ""
+);
 
 export class CdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
