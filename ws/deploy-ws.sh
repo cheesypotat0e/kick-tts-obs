@@ -29,7 +29,7 @@ else
   SCP_OPTIONS="-o StrictHostKeyChecking=no"
 fi
 
-ssh $SCP_OPTIONS $REMOTE_USER@$REMOTE_HOST << EOF
+if ! ssh $SCP_OPTIONS $REMOTE_USER@$REMOTE_HOST << EOF
     set -e
 
     cd $REMOTE_DIR
@@ -40,12 +40,16 @@ ssh $SCP_OPTIONS $REMOTE_USER@$REMOTE_HOST << EOF
         sudo mv $BINARY_NAME ${BINARY_NAME}.backup
     fi
 EOF
+then
+  echo "Error occurred during initial SSH command execution."
+  exit 1
+fi
 
 scp $SCP_OPTIONS -r $BINARY_NAME requirements.txt $REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR/
 
 # SSH into remote server and perform deployment
 echo "Deploying on remote server..."
-ssh $SCP_OPTIONS $REMOTE_USER@$REMOTE_HOST << EOF
+if ! ssh $SCP_OPTIONS $REMOTE_USER@$REMOTE_HOST << EOF
 
     set -e
 
@@ -85,5 +89,9 @@ SERVICEEOF
     # This ensures the status output is directly printed to the console
     sudo systemctl status $SERVICE_NAME --no-pager
 EOF
+then
+  echo "Error occurred during SSH command execution."
+  exit 1
+fi
 
 echo "Deployment completed successfully!"
