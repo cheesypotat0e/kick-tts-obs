@@ -43,6 +43,7 @@ export type Settings = {
   oauthServiceUrl: string;
   ttsServiceUrl: string;
   wsServiceUrl: string;
+  kickApiUrl: string;
   subOnly: boolean;
   userId: string;
   name: string;
@@ -86,6 +87,7 @@ export class SettingsStore {
     oauthServiceUrl: "",
     ttsServiceUrl: "",
     wsServiceUrl: "",
+    kickApiUrl: "",
     userId: "",
     name: "",
     bits: new Map([

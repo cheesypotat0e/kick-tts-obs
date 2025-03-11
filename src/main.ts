@@ -23,8 +23,11 @@ const settings = SettingsStore.getInstance();
 const imgurClientID = import.meta.env.VITE_API_IMGUR_CLIENT_ID;
 const authUrl = import.meta.env.VITE_AUTH_URL;
 const oauthUrl = import.meta.env.VITE_OAUTH_URL;
+const kickApiUrl = import.meta.env.VITE_KICK_API_URL;
+
 settings.set("authServiceUrl", authUrl);
 settings.set("oauthServiceUrl", oauthUrl);
+settings.set("kickApiUrl", kickApiUrl);
 
 if (!imgurClientID) {
   throw new Error(
@@ -54,9 +57,7 @@ if (code) {
 
   const name = settings.get("name");
 
-  const chatRes = await fetch(
-    `https://kick.com/api/v2/channels/${name}/chatroom`
-  );
+  const chatRes = await fetch(`${kickApiUrl}/${name}`);
 
   const chatData = await chatRes.json();
 
@@ -73,6 +74,8 @@ if (code) {
     // recovery mode
     params.set("roomId", "88774");
   }
+
+  settings.set("roomId", params.get("roomId")!);
 }
 
 const existingVoices = settings.get("voices");
@@ -87,13 +90,15 @@ settings.set(
   ])
 );
 
-settings.saveToLocalStorage();
-
 const roomsID = settings.get("roomId");
 
 if (!settings.has("roomId")) {
+  // recovery mode
+  settings.set("roomId", "88774");
   throw new Error("Room ID is missing");
 }
+
+settings.saveToLocalStorage();
 
 const kickMs = new KickMessenger(settings);
 
