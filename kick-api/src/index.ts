@@ -39,7 +39,7 @@ export const kickChatroomApi = async (
     const doc = await docRef.get();
 
     if (doc.exists) {
-      return res.status(200).json(doc.data());
+      return res.status(200).json(JSON.parse(doc.data()!.data));
     }
 
     console.log(
