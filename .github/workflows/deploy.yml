@@ -207,8 +207,8 @@ jobs:
         run: |
           ./deploy-ws.sh
         env:
-          REMOTE_USER: ${{ vars.REMOTE_USER }}
-          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+          REMOTE_USER: ${{ vars.WS_REMOTE_USER }}
+          REMOTE_HOST: ${{ secrets.WS_REMOTE_HOST }}
 
   # deploy:
   #   environment:
