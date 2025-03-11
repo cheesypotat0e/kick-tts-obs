@@ -1,25 +1,20 @@
 import os
 import secrets
 from datetime import datetime
+from functools import wraps
 
 import functions_framework
+import jwt
 import requests
-from clerk_backend_api import Clerk
-from flask import Flask, Request, Response, request
+from flask import Flask, Response, g, request
 from google.cloud import firestore
 
-# Initialize Firestore client
 db = firestore.Client()
 
-# Load environment variables
-PRIVATE_KEY = os.environ.get("PRIVATE_KEY")
-PUBLIC_KEY = os.environ.get("PUBLIC_KEY")
 TTS_SERVICE_URL = os.environ.get("TTS_SERVICE_URL")
 WS_SERVICE_URL = os.environ.get("WS_SERVICE_URL")
+JWT_PRIVATE_KEY = os.environ.get("JWT_PRIVATE_KEY")
 
-clerk = Clerk(
-    bearer_auth=os.environ.get("CLERK_SECRET_KEY"),
-)
 
 app = Flask(__name__)
 
@@ -44,34 +39,167 @@ def after_request_func(response: Response):
     return response
 
 
+def require_kick_auth(f):
+    @wraps(f)
+    async def decorated_function(*args, **kwargs):
+
+        if request.method == "OPTIONS":
+            return await f(*args, **kwargs)
+
+        token = request.headers.get("Authorization")
+
+        if not token:
+            return (
+                {"error": "Missing or invalid authorization header"},
+                401,
+            )
+
+        try:
+            token = token.split(" ")[1]
+        except IndexError:
+            return (
+                {"error": "Missing or invalid authorization header"},
+                401,
+            )
+
+        try:
+            res = validate_kick_access_token(token)
+        except (UnauthorizedError, InvalidTokenError):
+            return (
+                {"error": "Unauthorized by Kick"},
+                401,
+            )
+        except APIError:
+            return (
+                {"error": "Kick API error"},
+                401,
+            )
+        except Exception as e:
+            print(f"Error in generate_code: {str(e)}")
+            return (
+                {"error": "Internal server error"},
+                500,
+            )
+
+        if not res:
+            return (
+                {"error": "Invalid or expired Kick access token"},
+                401,
+            )
+
+        try:
+            data = auth_kick_token(token)
+        except (UnauthorizedError, InvalidTokenError):
+            return (
+                {"error": "Unauthorized by Kick"},
+                401,
+            )
+        except APIError:
+            return (
+                {"error": "Kick API error"},
+                401,
+            )
+        except Exception as e:
+            print(f"Error in generate_code: {str(e)}")
+            return (
+                {"error": "Internal server error"},
+                500,
+            )
+
+        if not data:
+            return (
+                {"error": "Missing Kick user data"},
+                500,
+            )
+
+        user_id = data.get("id")
+        name = data.get("username")
+
+        g.user_id = user_id
+        g.name = name
+
+        return await f(*args, **kwargs)
+
+    return decorated_function
+
+
+def require_auth(f):
+    @wraps(f)
+    async def decorated_function(*args, **kwargs):
+        if request.method == "OPTIONS":
+            return await f(*args, **kwargs)
+
+        token = request.headers.get("Authorization")
+        if not token:
+            return (
+                {"error": "Missing or invalid authorization header"},
+                401,
+            )
+
+        try:
+            code = token.split(" ")[1]
+        except IndexError:
+            return (
+                {"error": "Missing or invalid authorization header"},
+                401,
+            )
+
+        record = validate_code(code)
+
+        if not record:
+            return (
+                {"error": "Invalid code"},
+                401,
+            )
+
+        user_id = record.get("user_id")
+        name = record.get("name")
+
+        g.user_id = user_id
+        g.name = name
+        return await f(*args, **kwargs)
+
+    return decorated_function
+
+
 @app.get("/healthz")
 def healthz_req():
-    return {"status": "ok"}, 200, {"Access-Control-Allow-Origin": "*"}
+    return {"status": "ok"}, 200
 
 
 @app.get("/")
 def root():
-    return {"status": "ok"}, 200, {"Access-Control-Allow-Origin": "*"}
+    return {"status": "ok"}, 200
 
 
 @app.get("/code")
+@require_kick_auth
 def generate_code_req():
     return generate_code()
 
 
 @app.post("/validate")
+@require_auth
 def validate_code_req():
     return validate_auth_code()
 
 
 @app.post("/auth")
+@require_auth
 def auth_req():
     return auth_code()
 
 
 @app.delete("/auth")
+@require_kick_auth
 def revoke_auth_req():
     return revoke_auth()
+
+
+@app.get("/ws/auth")
+@require_auth
+def get_ws_auth_token_req():
+    return get_ws_auth_token()
 
 
 @functions_framework.http
@@ -89,82 +217,8 @@ def auth_handler(request):
 
 
 def generate_code():
-    auth_token = request.headers.get("Authorization")
-
-    if not auth_token or not auth_token.startswith("Bearer "):
-        return (
-            {"error": "Missing or invalid authorization header"},
-            401,
-            {"Access-Control-Allow-Origin": "*"},
-        )
-
-    try:
-        res = validate_kick_access_token(auth_token)
-    except (UnauthorizedError, InvalidTokenError):
-        return (
-            {"error": "Unauthorized by Kick"},
-            401,
-            {"Access-Control-Allow-Origin": "*"},
-        )
-    except APIError:
-        return (
-            {"error": "Kick API error"},
-            401,
-            {"Access-Control-Allow-Origin": "*"},
-        )
-    except Exception as e:
-        print(f"Error in generate_code: {str(e)}")
-        return (
-            {"error": "Internal server error"},
-            500,
-            {"Access-Control-Allow-Origin": "*"},
-        )
-
-    if not res:
-        return (
-            {"error": "Invalid or expired Kick access token"},
-            401,
-            {"Access-Control-Allow-Origin": "*"},
-        )
-
-    if not res:
-        return (
-            {"error": "Invalid or expired session"},
-            401,
-            {"Access-Control-Allow-Origin": "*"},
-        )
-
-    try:
-        data = auth_kick_token(auth_token)
-    except (UnauthorizedError, InvalidTokenError):
-        return (
-            {"error": "Unauthorized by Kick"},
-            401,
-            {"Access-Control-Allow-Origin": "*"},
-        )
-    except APIError:
-        return (
-            {"error": "Kick API error"},
-            401,
-            {"Access-Control-Allow-Origin": "*"},
-        )
-    except Exception as e:
-        print(f"Error in generate_code: {str(e)}")
-        return (
-            {"error": "Internal server error"},
-            500,
-            {"Access-Control-Allow-Origin": "*"},
-        )
-
-    user_id = data.get("user_id")
-    name = data.get("name")
-
-    if not user_id:
-        return (
-            {"error": "Missing user_id"},
-            400,
-            {"Access-Control-Allow-Origin": "*"},
-        )
+    user_id = g.user_id
+    name = g.name
 
     user = db.collection("users").document(str(user_id)).get()
 
@@ -185,121 +239,30 @@ def generate_code():
     return (
         {"code": code, "user_id": str(user_id), "name": name},
         200,
-        {"Access-Control-Allow-Origin": "*"},
     )
 
 
 def validate_auth_code():
-    """
-    ```
-    Request:
-    {
-        "code": string  # Authentication code received from previous step
-    }
-    ```
 
-    ```
-    Response:
-    {
-        "error": string  # Error message if request fails
-    }
-    ```
-    or
-    {
-        "user_id": string # The user ID associated with the code
-    }
-
-    Status Codes:
-    - 200: Success
-    - 400: Missing code
-    - 401: Invalid code
-    """
-    request_json = request.get_json()
-
-    if not request_json or "code" not in request_json:
-        return (
-            {"error": "Missing code in request body"},
-            400,
-            {"Access-Control-Allow-Origin": "*"},
-        )
-
-    code = request_json.get("code")
-    auth_code = db.collection("auth-codes").document(code).get()
-
-    if not auth_code.exists:
-        return (
-            {"error": "Invalid code"},
-            401,
-            {"Access-Control-Allow-Origin": "*"},
-        )
-
-    user_id = auth_code.get("user_id")
+    user_id = g.user_id
 
     return (
-        {"user_id": user_id},
+        {"user_id": str(user_id), "name": g.name},
         200,
-        {"Access-Control-Allow-Origin": "*"},
     )
 
 
 def auth_code():
-    """
-    ```
-    Request:
-    {
-        "code": string  # Authentication code received from previous step
-    }
-    ```
 
-    ```
-    Response:
-    {
-        "error": string  # Error message if request fails
-    }
-    ```
-    or
-    ```
-    {
-        "access_token": string,  # User's access token
-        "refresh_token": string, # User's refresh token
-        "expiry": number,       # Token expiry timestamp
-        "scope": string        # Token scope
-    }
-    ```
-
-    Status Codes:
-    - 200: Success
-    - 400: Invalid/missing code or user not found
-    """
-    request_json = request.get_json()
-
-    if not request_json or "code" not in request_json:
-        return (
-            {"error": "Missing code in request body"},
-            400,
-            {"Access-Control-Allow-Origin": "*"},
-        )
-
-    code = request_json["code"]
-    auth_code = db.collection("auth-codes").document(code).get()
-
-    if not auth_code.exists:
-        return (
-            {"error": "Invalid or already used code"},
-            400,
-            {"Access-Control-Allow-Origin": "*"},
-        )
-
-    user_id = auth_code.get("user_id")
+    user_id = g.user_id
+    name = g.name
 
     user = db.collection("users").document(str(user_id)).get()
-    user_name = auth_code.get("name")
 
     if not user.exists:
         return (
             {"error": "User not found"},
             400,
-            {"Access-Control-Allow-Origin": "*"},
         )
 
     access_token = user.get("access_token")
@@ -316,62 +279,15 @@ def auth_code():
             "tts_service_url": TTS_SERVICE_URL,
             "ws_service_url": WS_SERVICE_URL,
             "user_id": user_id,
-            "name": user_name,
+            "name": name,
         },
         200,
-        {"Access-Control-Allow-Origin": "*"},
     )
 
 
 def revoke_auth():
-    """
-    ```
-    Headers:
-    {
-        "Authorization": string  # User's kick access token
-    }
-    ```
-    """
 
-    auth_token = request.headers.get("Authorization")
-
-    if not auth_token or not auth_token.startswith("Bearer "):
-        return (
-            {"error": "Missing or invalid authorization header"},
-            401,
-            {"Access-Control-Allow-Origin": "*"},
-        )
-
-    try:
-        res = auth_kick_token(auth_token)
-    except (UnauthorizedError, InvalidTokenError):
-        return (
-            {"error": "Unauthorized by Kick"},
-            401,
-            {"Access-Control-Allow-Origin": "*"},
-        )
-    except APIError:
-        return (
-            {"error": "Kick API error"},
-            401,
-            {"Access-Control-Allow-Origin": "*"},
-        )
-    except Exception as e:
-        print(f"Error in revoke_auth: {str(e)}")
-        return (
-            {"error": "Internal server error"},
-            500,
-            {"Access-Control-Allow-Origin": "*"},
-        )
-
-    if not res:
-        return (
-            {"error": "Invalid or expired Kick access token"},
-            401,
-            {"Access-Control-Allow-Origin": "*"},
-        )
-
-    user_id = res.json().data[0].user_id
+    user_id = g.user_id
 
     user = db.collection("users").document(str(user_id)).get()
 
@@ -379,7 +295,6 @@ def revoke_auth():
         return (
             {"error": "User not found"},
             400,
-            {"Access-Control-Allow-Origin": "*"},
         )
 
     code = user.get("code")
@@ -389,11 +304,26 @@ def revoke_auth():
     return (
         {"success": "Code revoked"},
         200,
-        {"Access-Control-Allow-Origin": "*"},
+    )
+
+
+def get_ws_auth_token():
+    name = g.name
+
+    token = jwt.encode(
+        {"sub": name},
+        JWT_PRIVATE_KEY,
+        algorithm="HS256",
+    )
+
+    return (
+        {"token": token},
+        200,
     )
 
 
 def validate_kick_access_token(access_token: str):
+
     res = requests.post(
         "https://api.kick.com/public/v1/token/introspect",
         headers={"Authorization": access_token},
@@ -432,6 +362,15 @@ def auth_kick_token(access_token: str):
         raise APIError(data.get("message"))
 
     return data.get("data")[0]
+
+
+def validate_code(code: str):
+    auth_code = db.collection("auth-codes").document(code).get()
+
+    if not auth_code.exists:
+        return {}
+
+    return auth_code.to_dict()
 
 
 class UnauthorizedError(Exception):
