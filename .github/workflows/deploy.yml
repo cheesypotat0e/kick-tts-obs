@@ -181,7 +181,9 @@ jobs:
 
       - name: Deploy
         run: |
-          cp package.json dist/ && 
+          cd dist && \
+          npm init -y && \
+          cd .. && \
           gcloud functions deploy kick-api-proxy \
             --gen2 \
             --runtime=nodejs22 \
