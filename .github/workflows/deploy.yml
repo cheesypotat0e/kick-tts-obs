@@ -183,7 +183,7 @@ jobs:
         run: |
           gcloud functions deploy kick-api-proxy \
             --gen2 \
-            --runtime=nodejs23 \
+            --runtime=nodejs22 \
             --region=us-west1 \
             --source=dist \
             --entry-point=kickChatroomApi \
