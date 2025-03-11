@@ -71,7 +71,7 @@ export const kickChatroomApi = async (
     const resp = Buffer.from(responseBody.httpResponseBody, "base64");
 
     await docRef.set({
-      data: JSON.stringify(resp),
+      data: resp.toString("utf-8"),
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
     });
 
