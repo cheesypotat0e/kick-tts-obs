@@ -213,47 +213,47 @@ jobs:
   #         REQUIREMENTS_NAME: ${{ vars.REQUIREMENTS_NAME }}
   #         SERVICE_NAME: ${{ vars.SERVICE_NAME }}
 
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  # deploy:
+  #   environment:
+  #     name: github-pages
+  #     url: ${{ steps.deployment.outputs.page_url }}
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
+  #     - name: Setup pnpm
+  #       uses: pnpm/action-setup@v4
+  #       with:
+  #         version: 10
 
-      - name: Install dependencies
-        run: pnpm install
+  #     - name: Install dependencies
+  #       run: pnpm install
 
-      - name: Run Build
-        run: |
-          pnpm run build
-        env:
-          VITE_API_IMGUR_CLIENT_ID: ${{ vars.VITE_API_IMGUR_CLIENT_ID }}
-          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
-          VITE_AUTH_URL: ${{ vars.VITE_AUTH_URL }}
-          VITE_OAUTH_URL: ${{ vars.VITE_OAUTH_URL }}
+  #     - name: Run Build
+  #       run: |
+  #         pnpm run build
+  #       env:
+  #         VITE_API_IMGUR_CLIENT_ID: ${{ vars.VITE_API_IMGUR_CLIENT_ID }}
+  #         VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+  #         VITE_AUTH_URL: ${{ vars.VITE_AUTH_URL }}
+  #         VITE_OAUTH_URL: ${{ vars.VITE_OAUTH_URL }}
 
-      - name: Create CNAME file
-        run: |
-          echo "cheesybot.xyz" > ./dist/CNAME
+  #     - name: Create CNAME file
+  #       run: |
+  #         echo "cheesybot.xyz" > ./dist/CNAME
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
+  #     - name: Setup Pages
+  #       uses: actions/configure-pages@v5
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: "./dist"
+  #     - name: Upload artifact
+  #       uses: actions/upload-pages-artifact@v3
+  #       with:
+  #         path: "./dist"
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+  #     - name: Deploy to GitHub Pages
+  #       id: deployment
+  #       uses: actions/deploy-pages@v4
 
   deploy-cdk:
     runs-on: ubuntu-latest
