@@ -181,14 +181,11 @@ jobs:
 
       - name: Deploy
         run: |
-          cd dist && \
-          npm init -y && \
-          cd .. && \
           gcloud functions deploy kick-api-proxy \
             --gen2 \
             --runtime=nodejs22 \
             --region=us-west1 \
-            --source=dist \
+            --source=. \
             --entry-point=kickChatroomApi \
             --trigger-http \
             --allow-unauthenticated \
