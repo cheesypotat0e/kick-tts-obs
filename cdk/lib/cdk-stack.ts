@@ -15,6 +15,9 @@ const oauthCloudFunctionUrl = stripTrailingSlash(
 const ttsCloudFunctionUrl = stripTrailingSlash(
   process.env.TTS_CLOUD_FUNCTION_URL ?? ""
 );
+const kickApiCloudFunctionUrl = stripTrailingSlash(
+  process.env.KICK_API_CLOUD_FUNCTION_URL ?? ""
+);
 
 export class CdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -124,6 +127,28 @@ export class CdkStack extends cdk.Stack {
       }
     );
 
+    const kickApiResource = rootResource.addResource("kick");
+    const kickApiProxyResource = kickApiResource.addResource("{proxy+}");
+    kickApiProxyResource.addMethod(
+      "ANY",
+      new cdk.aws_apigateway.HttpIntegration(
+        `${kickApiCloudFunctionUrl}/{proxy}`,
+        {
+          httpMethod: "ANY",
+          options: {
+            requestParameters: {
+              "integration.request.path.proxy": "method.request.path.proxy",
+            },
+          },
+        }
+      ),
+      {
+        requestParameters: {
+          "method.request.path.proxy": true,
+        },
+      }
+    );
+
     // Add root path methods without proxy parameters
     authResource.addMethod(
       "ANY",
@@ -142,6 +167,13 @@ export class CdkStack extends cdk.Stack {
     oauthResource.addMethod(
       "ANY",
       new cdk.aws_apigateway.HttpIntegration(oauthCloudFunctionUrl, {
+        httpMethod: "ANY",
+      })
+    );
+
+    kickApiResource.addMethod(
+      "ANY",
+      new cdk.aws_apigateway.HttpIntegration(kickApiCloudFunctionUrl, {
         httpMethod: "ANY",
       })
     );
