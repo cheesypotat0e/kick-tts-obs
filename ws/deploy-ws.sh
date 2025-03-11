@@ -29,7 +29,7 @@ else
   SCP_OPTIONS="-o StrictHostKeyChecking=no"
 fi
 
-ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST << EOF
+ssh $SCP_OPTIONS $REMOTE_USER@$REMOTE_HOST << EOF
     set -e
 
     cd $REMOTE_DIR
@@ -45,7 +45,7 @@ scp $SCP_OPTIONS -r $BINARY_NAME requirements.txt $REMOTE_USER@$REMOTE_HOST:$REM
 
 # SSH into remote server and perform deployment
 echo "Deploying on remote server..."
-ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST << EOF
+ssh $SCP_OPTIONS $REMOTE_USER@$REMOTE_HOST << EOF
 
     set -e
 
