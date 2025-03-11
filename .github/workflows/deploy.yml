@@ -185,7 +185,7 @@ jobs:
             --gen2 \
             --runtime=nodejs18 \
             --region=us-west1 \
-            --source=. \
+            --source=dist \
             --entry-point=kickChatroomApi \
             --trigger-http \
             --allow-unauthenticated \
