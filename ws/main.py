@@ -196,8 +196,17 @@ async def broadcast_message(
 async def websocket_endpoint(
     websocket: WebSocket,
     room_id: str,
-    credentials: HTTPAuthorizationCredentials = Depends(authorize_websocket),
 ):
+    token = websocket.query_params.get("token")
+
+    if not token:
+        await websocket.close(
+            code=status.WS_1008_POLICY_VIOLATION,
+            reason="Authentication token is required",
+        )
+        return
+
+    credentials = await authorize(token)
     await manager.connect(websocket, room_id, credentials.get("sub"))
     try:
         while True:
