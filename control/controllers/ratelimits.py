@@ -14,7 +14,9 @@ async def get_ratelimits():
         .get()
     )
 
-    return [ratelimit.to_dict() for ratelimit in ratelimits]
+    return [
+        {**ratelimit.to_dict(), "user_id": ratelimit.id} for ratelimit in ratelimits
+    ]
 
 
 async def add_ratelimit():

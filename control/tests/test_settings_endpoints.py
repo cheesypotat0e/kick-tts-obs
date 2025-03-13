@@ -331,7 +331,7 @@ def test_settings_endpoint_with_bits(client: FlaskClient, monkeypatch: MonkeyPat
     # Test rate limits endpoint
     response = client.post(
         "/settings/ratelimits",
-        json={"target": "test_target", "period": 30, "requests": 5},
+        json={"user_id": "test_target", "period": 30, "limit": 5},
         headers={"Authorization": "Bearer fake_token"},
     )
     assert response.status_code == 200
@@ -341,11 +341,12 @@ def test_settings_endpoint_with_bits(client: FlaskClient, monkeypatch: MonkeyPat
     )
     assert response.status_code == 200
     rate_limits_data = response.get_json()
-    assert "test_target" in rate_limits_data
+    assert len(rate_limits_data) == 1
+    assert rate_limits_data[0]["user_id"] == "test_target"
 
     response = client.delete(
         "/settings/ratelimits",
-        json={"target": "test_target"},
+        json={"user_id": "test_target"},
         headers={"Authorization": "Bearer fake_token"},
     )
     assert response.status_code == 200
@@ -355,7 +356,7 @@ def test_settings_endpoint_with_bits(client: FlaskClient, monkeypatch: MonkeyPat
     )
     assert response.status_code == 200
     rate_limits_data = response.get_json()
-    assert "test_target" not in rate_limits_data
+    assert len(rate_limits_data) == 0
 
 
 @pytest.mark.usefixtures("client")
