@@ -123,8 +123,7 @@ def verify_token(token: str) -> dict:
         return False
 
 
-def authorize(credentials: HTTPAuthorizationCredentials = Security(security)):
-    token = credentials.credentials
+def authorize(token: str):
     try:
         return verify_token(token)
     except JWTError as e:
