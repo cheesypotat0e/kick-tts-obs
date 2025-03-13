@@ -205,7 +205,7 @@ async def websocket_endpoint(
         )
         return
 
-    credentials = await authorize(token)
+    credentials = authorize(token)
     await manager.connect(websocket, room_id, credentials.get("sub"))
     try:
         while True:
