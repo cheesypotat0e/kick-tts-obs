@@ -313,7 +313,7 @@ def get_ws_auth_token():
     token = jwt.encode(
         {"sub": name},
         JWT_PRIVATE_KEY,
-        algorithm="HS256",
+        algorithm="RS256",
     )
 
     return (
