@@ -11,7 +11,7 @@ async def get_bans():
         await client.collection("settings").document(user_id).collection("bans").get()
     )
 
-    return [ban.to_dict() for ban in bans]
+    return [{**ban.to_dict(), "user_id": ban.id} for ban in bans]
 
 
 async def get_ban(target_user_id: str):
@@ -30,7 +30,10 @@ async def get_ban(target_user_id: str):
     if not ban.exists:
         return {"error": "Ban not found"}, 404
 
-    return ban.to_dict()
+    ban_data = ban.to_dict()
+    ban_data["user_id"] = target_user_id
+
+    return ban_data
 
 
 async def add_ban():

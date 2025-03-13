@@ -308,7 +308,10 @@ def test_settings_endpoint_with_bits(client: FlaskClient, monkeypatch: MonkeyPat
     )
     assert response.status_code == 200
     bans_data = response.get_json()
-    assert "test_user" in bans_data
+
+    user_id = bans_data[0]["user_id"]
+
+    assert user_id == "test_user"
 
     response = client.delete(
         "/settings/bans",
@@ -322,7 +325,8 @@ def test_settings_endpoint_with_bits(client: FlaskClient, monkeypatch: MonkeyPat
     )
     assert response.status_code == 200
     bans_data = response.get_json()
-    assert "test_user" not in bans_data
+
+    assert len(bans_data) == 0
 
     # Test rate limits endpoint
     response = client.post(
