@@ -41,10 +41,10 @@ def after_request_func(response: Response):
 
 def require_kick_auth(f):
     @wraps(f)
-    async def decorated_function(*args, **kwargs):
+    def decorated_function(*args, **kwargs):
 
         if request.method == "OPTIONS":
-            return await f(*args, **kwargs)
+            return f(*args, **kwargs)
 
         token = request.headers.get("Authorization")
 
@@ -118,16 +118,16 @@ def require_kick_auth(f):
         g.user_id = user_id
         g.name = name
 
-        return await f(*args, **kwargs)
+        return f(*args, **kwargs)
 
     return decorated_function
 
 
 def require_auth(f):
     @wraps(f)
-    async def decorated_function(*args, **kwargs):
+    def decorated_function(*args, **kwargs):
         if request.method == "OPTIONS":
-            return await f(*args, **kwargs)
+            return f(*args, **kwargs)
 
         token = request.headers.get("Authorization")
         if not token:
@@ -157,7 +157,7 @@ def require_auth(f):
 
         g.user_id = user_id
         g.name = name
-        return await f(*args, **kwargs)
+        return f(*args, **kwargs)
 
     return decorated_function
 
