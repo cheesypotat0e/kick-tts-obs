@@ -1,37 +1,46 @@
 import os
+import sys
 from functools import wraps
 
 import functions_framework
 import httpx
 import jwt
-from controllers.admins import add_admins, delete_admins, get_admins, update_admins
-from controllers.bans import add_ban, delete_ban, get_ban, get_bans, update_ban
-from controllers.bits import add_bit, delete_bit, get_bit, get_bits, update_bit
-from controllers.ratelimits import (
-    add_ratelimit,
-    delete_ratelimit,
-    get_ratelimits,
-    update_ratelimit,
-)
-from controllers.settings import (
-    add_bit_to_settings,
-    add_voice_to_settings,
-    delete_bit_from_settings,
-    delete_settings_field,
-    delete_voice_from_settings,
-    get_settings,
-    update_settings,
-)
-from controllers.status_check import status_check
-from controllers.voices import (
-    add_voice,
-    delete_voice,
-    get_voice,
-    get_voices,
-    update_voice,
-)
 from flask import Flask, Request, Response, g, request
 from werkzeug.middleware.proxy_fix import ProxyFix
+
+from .controllers import (
+    add_admins,
+    add_ban,
+    add_bit,
+    add_bit_to_settings,
+    add_ratelimit,
+    add_voice,
+    add_voice_to_settings,
+    delete_admins,
+    delete_ban,
+    delete_bit,
+    delete_bit_from_settings,
+    delete_ratelimit,
+    delete_settings_field,
+    delete_voice,
+    delete_voice_from_settings,
+    get_admins,
+    get_ban,
+    get_bans,
+    get_bit,
+    get_bits,
+    get_ratelimits,
+    get_settings,
+    get_voice,
+    get_voices,
+    status_check,
+    update_admins,
+    update_ban,
+    update_bit,
+    update_ratelimit,
+    update_settings,
+    update_voice,
+)
 
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL")
 
@@ -90,7 +99,10 @@ def require_auth(f):
             )
 
         async with httpx.AsyncClient() as client:
-            res = await client.post(f"{AUTH_SERVICE_URL}/validate", json={"code": code})
+            res = await client.post(
+                f"{AUTH_SERVICE_URL}/validate",
+                headers={"Authorization": f"Bearer {code}"},
+            )
 
             if res.status_code == 400:
                 return (

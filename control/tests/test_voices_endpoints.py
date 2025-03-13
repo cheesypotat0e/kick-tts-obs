@@ -1,7 +1,8 @@
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from flask.testing import FlaskClient
-from main import app
+
+from control import app
 
 
 def create_mock_response(json_data, status_code):

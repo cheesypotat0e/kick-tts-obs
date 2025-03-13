@@ -30,6 +30,22 @@ async def get_settings():
         .get()
     ]
 
+    res["bans"] = [
+        ban.to_dict()
+        for ban in await client.collection("settings")
+        .document(user_id)
+        .collection("bans")
+        .get()
+    ]
+
+    res["rateLimits"] = [
+        rate_limit.to_dict()
+        for rate_limit in await client.collection("settings")
+        .document(user_id)
+        .collection("rateLimits")
+        .get()
+    ]
+
     return res
 
 

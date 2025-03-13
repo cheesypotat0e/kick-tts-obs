@@ -2,7 +2,8 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from flask.testing import FlaskClient
 from google.cloud import firestore
-from main import app
+
+from control import app
 
 
 @pytest.fixture(scope="module", autouse=True)

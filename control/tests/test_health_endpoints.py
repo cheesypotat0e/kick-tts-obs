@@ -1,7 +1,8 @@
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from flask.testing import FlaskClient
-from main import app
+
+from control import app
 
 # Mock the auth service response for authenticated endpoints
 
