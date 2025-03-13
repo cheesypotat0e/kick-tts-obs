@@ -112,8 +112,8 @@ def require_kick_auth(f):
                 500,
             )
 
-        user_id = data.get("id")
-        name = data.get("username")
+        user_id = data.get("user_id")
+        name = data.get("name")
 
         g.user_id = user_id
         g.name = name
