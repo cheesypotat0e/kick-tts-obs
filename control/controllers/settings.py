@@ -14,37 +14,28 @@ async def get_settings():
 
     res = settings.to_dict()
 
-    res["voices"] = [
-        voice.to_dict()
-        for voice in await client.collection("settings")
-        .document(user_id)
-        .collection("voices")
-        .get()
-    ]
+    import asyncio
 
-    res["bits"] = [
-        bit.to_dict()
-        for bit in await client.collection("settings")
-        .document(user_id)
-        .collection("bits")
-        .get()
-    ]
+    voices_ref = client.collection("settings").document(user_id).collection("voices")
+    bits_ref = client.collection("settings").document(user_id).collection("bits")
+    bans_ref = client.collection("settings").document(user_id).collection("bans")
+    rate_limits_ref = (
+        client.collection("settings").document(user_id).collection("rateLimits")
+    )
 
-    res["bans"] = [
-        ban.to_dict()
-        for ban in await client.collection("settings")
-        .document(user_id)
-        .collection("bans")
-        .get()
-    ]
+    voices_task = voices_ref.get()
+    bits_task = bits_ref.get()
+    bans_task = bans_ref.get()
+    rate_limits_task = rate_limits_ref.get()
 
-    res["rateLimits"] = [
-        rate_limit.to_dict()
-        for rate_limit in await client.collection("settings")
-        .document(user_id)
-        .collection("rateLimits")
-        .get()
-    ]
+    voices, bits, bans, rate_limits = await asyncio.gather(
+        voices_task, bits_task, bans_task, rate_limits_task
+    )
+
+    res["voices"] = [voice.to_dict() for voice in voices]
+    res["bits"] = [bit.to_dict() for bit in bits]
+    res["bans"] = [ban.to_dict() for ban in bans]
+    res["rateLimits"] = [rate_limit.to_dict() for rate_limit in rate_limits]
 
     return res
 
