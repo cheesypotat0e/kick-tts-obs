@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 from functools import wraps
@@ -103,6 +104,11 @@ def require_auth(f):
                 f"{AUTH_SERVICE_URL}/validate",
                 headers={"Authorization": f"Bearer {code}"},
             )
+
+            if res.status_code != 200:
+                logging.error(
+                    f"Request to {AUTH_SERVICE_URL}/validate failed with status code {res.status_code} and response {res.text}"
+                )
 
             if res.status_code == 400:
                 return (
