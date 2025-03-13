@@ -326,7 +326,7 @@ def validate_kick_access_token(access_token: str):
 
     res = requests.post(
         "https://api.kick.com/public/v1/token/introspect",
-        headers={"Authorization": access_token},
+        headers={"Authorization": "Bearer " + access_token},
     )
 
     data = res.json()
@@ -347,7 +347,7 @@ def auth_kick_token(access_token: str):
 
     res = requests.get(
         "https://api.kick.com/public/v1/users",
-        headers={"Authorization": access_token},
+        headers={"Authorization": "Bearer " + access_token},
     )
 
     data = res.json()
