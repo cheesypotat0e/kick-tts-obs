@@ -330,28 +330,28 @@ def test_settings_endpoint_with_bits(client: FlaskClient, monkeypatch: MonkeyPat
 
     # Test rate limits endpoint
     response = client.post(
-        "/settings/rate_limits",
+        "/settings/ratelimits",
         json={"target": "test_target", "period": 30, "requests": 5},
         headers={"Authorization": "Bearer fake_token"},
     )
     assert response.status_code == 200
 
     response = client.get(
-        "/settings/rate_limits", headers={"Authorization": "Bearer fake_token"}
+        "/settings/ratelimits", headers={"Authorization": "Bearer fake_token"}
     )
     assert response.status_code == 200
     rate_limits_data = response.get_json()
     assert "test_target" in rate_limits_data
 
     response = client.delete(
-        "/settings/rate_limits",
+        "/settings/ratelimits",
         json={"target": "test_target"},
         headers={"Authorization": "Bearer fake_token"},
     )
     assert response.status_code == 200
 
     response = client.get(
-        "/settings/rate_limits", headers={"Authorization": "Bearer fake_token"}
+        "/settings/ratelimits", headers={"Authorization": "Bearer fake_token"}
     )
     assert response.status_code == 200
     rate_limits_data = response.get_json()
