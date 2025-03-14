@@ -1,8 +1,11 @@
 from flask import g, request
 from google.cloud import firestore
+import time
+import asyncio
 
 
 async def get_settings():
+    start_time = time.time()
     user_id = g.user_id
 
     client = firestore.AsyncClient()
@@ -13,8 +16,6 @@ async def get_settings():
         return {"error": "Settings not found"}, 404
 
     res = settings.to_dict()
-
-    import asyncio
 
     voices_ref = client.collection("settings").document(user_id).collection("voices")
     bits_ref = client.collection("settings").document(user_id).collection("bits")
@@ -36,6 +37,10 @@ async def get_settings():
     res["bits"] = [bit.to_dict() for bit in bits]
     res["bans"] = [ban.to_dict() for ban in bans]
     res["rateLimits"] = [rate_limit.to_dict() for rate_limit in rate_limits]
+
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(f"get_settings execution time: {elapsed_time:.4f} seconds")
 
     return res
 

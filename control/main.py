@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import time
 from functools import wraps
 
 import functions_framework
@@ -99,6 +100,7 @@ def require_auth(f):
                 401,
             )
 
+        start_time = time.time()
         async with httpx.AsyncClient() as client:
             res = await client.post(
                 f"{AUTH_SERVICE_URL}/validate",
@@ -123,8 +125,11 @@ def require_auth(f):
 
             user_id = res.json().get("user_id")
             g.user_id = user_id
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        logging.info(f"require_auth execution time: {elapsed_time:.4f} seconds")
 
-            return await f(*args, **kwargs)
+        return await f(*args, **kwargs)
 
     return decorated_function
 
