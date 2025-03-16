@@ -1,4 +1,3 @@
-import asyncio
 import os
 import secrets
 from datetime import datetime
@@ -45,7 +44,7 @@ def require_kick_auth(f):
     async def decorated_function(*args, **kwargs):
 
         if request.method == "OPTIONS":
-            return f(*args, **kwargs)
+            return await f(*args, **kwargs)
 
         token = request.headers.get("Authorization")
 
@@ -128,7 +127,7 @@ def require_auth(f):
     @wraps(f)
     async def decorated_function(*args, **kwargs):
         if request.method == "OPTIONS":
-            return f(*args, **kwargs)
+            return await f(*args, **kwargs)
 
         token = request.headers.get("Authorization")
         if not token:
@@ -224,14 +223,14 @@ async def generate_code():
     user_id = g.user_id
     name = g.name
 
-    user = db.collection("users").document(str(user_id)).get()
+    user = await db.collection("users").document(str(user_id)).get()
 
     if user.exists and "code" in user.to_dict():
         code = user.get("code")
     else:
         code = secrets.token_hex(32)
         codes_ref = db.collection("auth-codes")
-        codes_ref.document(code).set(
+        await codes_ref.document(code).set(
             {
                 "code": code,
                 "created_at": datetime.now(),
@@ -261,7 +260,7 @@ async def auth_code():
     user_id = g.user_id
     name = g.name
 
-    user = db.collection("users").document(str(user_id)).get()
+    user = await db.collection("users").document(str(user_id)).get()
 
     if not user.exists:
         return (
@@ -293,7 +292,7 @@ async def revoke_auth():
 
     user_id = g.user_id
 
-    user = db.collection("users").document(str(user_id)).get()
+    user = await db.collection("users").document(str(user_id)).get()
 
     if not user.exists:
         return (
@@ -303,7 +302,7 @@ async def revoke_auth():
 
     code = user.get("code")
 
-    db.collection("auth-codes").document(code).delete()
+    await db.collection("auth-codes").document(code).delete()
 
     return (
         {"success": "Code revoked"},
@@ -369,7 +368,7 @@ async def auth_kick_token(access_token: str):
 
 
 async def validate_code(code: str):
-    auth_code = db.collection("auth-codes").document(code).get()
+    auth_code = await db.collection("auth-codes").document(code).get()
 
     if not auth_code.exists:
         return {}
