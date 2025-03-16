@@ -9,7 +9,7 @@ import requests
 from flask import Flask, Response, g, request
 from google.cloud import firestore
 
-db = firestore.AsyncClient()
+db = firestore.Client()
 
 TTS_SERVICE_URL = os.environ.get("TTS_SERVICE_URL")
 WS_SERVICE_URL = os.environ.get("WS_SERVICE_URL")
@@ -41,10 +41,9 @@ def after_request_func(response: Response):
 
 def require_kick_auth(f):
     @wraps(f)
-    async def decorated_function(*args, **kwargs):
-
+    def decorated_function(*args, **kwargs):
         if request.method == "OPTIONS":
-            return await f(*args, **kwargs)
+            return f(*args, **kwargs)
 
         token = request.headers.get("Authorization")
 
@@ -63,7 +62,7 @@ def require_kick_auth(f):
             )
 
         try:
-            res = await validate_kick_access_token(token)
+            res = validate_kick_access_token(token)
         except (UnauthorizedError, InvalidTokenError):
             return (
                 {"error": "Unauthorized by Kick"},
@@ -88,7 +87,7 @@ def require_kick_auth(f):
             )
 
         try:
-            data = await auth_kick_token(token)
+            data = auth_kick_token(token)
         except (UnauthorizedError, InvalidTokenError):
             return (
                 {"error": "Unauthorized by Kick"},
@@ -118,16 +117,16 @@ def require_kick_auth(f):
         g.user_id = user_id
         g.name = name
 
-        return await f(*args, **kwargs)
+        return f(*args, **kwargs)
 
     return decorated_function
 
 
 def require_auth(f):
     @wraps(f)
-    async def decorated_function(*args, **kwargs):
+    def decorated_function(*args, **kwargs):
         if request.method == "OPTIONS":
-            return await f(*args, **kwargs)
+            return f(*args, **kwargs)
 
         token = request.headers.get("Authorization")
         if not token:
@@ -144,7 +143,7 @@ def require_auth(f):
                 401,
             )
 
-        record = await validate_code(code)
+        record = validate_code(code)
 
         if not record:
             return (
@@ -158,49 +157,49 @@ def require_auth(f):
         g.user_id = user_id
         g.name = name
 
-        return await f(*args, **kwargs)
+        return f(*args, **kwargs)
 
     return decorated_function
 
 
 @app.get("/healthz")
-async def healthz_req():
+def healthz_req():
     return {"status": "ok"}, 200
 
 
 @app.get("/")
-async def root():
+def root():
     return {"status": "ok"}, 200
 
 
 @app.get("/code")
 @require_kick_auth
-async def generate_code_req():
-    return await generate_code()
+def generate_code_req():
+    return generate_code()
 
 
 @app.post("/validate")
 @require_auth
-async def validate_code_req():
-    return await validate_auth_code()
+def validate_code_req():
+    return validate_auth_code()
 
 
 @app.post("/auth")
 @require_auth
-async def auth_req():
-    return await auth_code()
+def auth_req():
+    return auth_code()
 
 
 @app.delete("/auth")
 @require_kick_auth
-async def revoke_auth_req():
-    return await revoke_auth()
+def revoke_auth_req():
+    return revoke_auth()
 
 
 @app.get("/ws/auth")
 @require_auth
-async def get_ws_auth_token_req():
-    return await get_ws_auth_token()
+def get_ws_auth_token_req():
+    return get_ws_auth_token()
 
 
 @functions_framework.http
@@ -219,18 +218,18 @@ def auth_handler(request):
             return app.process_response(response)
 
 
-async def generate_code():
+def generate_code():
     user_id = g.user_id
     name = g.name
 
-    user = await db.collection("users").document(str(user_id)).get()
+    user = db.collection("users").document(str(user_id)).get()
 
     if user.exists and "code" in user.to_dict():
         code = user.get("code")
     else:
         code = secrets.token_hex(32)
         codes_ref = db.collection("auth-codes")
-        await codes_ref.document(code).set(
+        codes_ref.document(code).set(
             {
                 "code": code,
                 "created_at": datetime.now(),
@@ -245,8 +244,7 @@ async def generate_code():
     )
 
 
-async def validate_auth_code():
-
+def validate_auth_code():
     user_id = g.user_id
 
     return (
@@ -255,12 +253,11 @@ async def validate_auth_code():
     )
 
 
-async def auth_code():
-
+def auth_code():
     user_id = g.user_id
     name = g.name
 
-    user = await db.collection("users").document(str(user_id)).get()
+    user = db.collection("users").document(str(user_id)).get()
 
     if not user.exists:
         return (
@@ -288,11 +285,10 @@ async def auth_code():
     )
 
 
-async def revoke_auth():
-
+def revoke_auth():
     user_id = g.user_id
 
-    user = await db.collection("users").document(str(user_id)).get()
+    user = db.collection("users").document(str(user_id)).get()
 
     if not user.exists:
         return (
@@ -302,7 +298,7 @@ async def revoke_auth():
 
     code = user.get("code")
 
-    await db.collection("auth-codes").document(code).delete()
+    db.collection("auth-codes").document(code).delete()
 
     return (
         {"success": "Code revoked"},
@@ -310,7 +306,7 @@ async def revoke_auth():
     )
 
 
-async def get_ws_auth_token():
+def get_ws_auth_token():
     name = g.name
 
     token = jwt.encode(
@@ -325,8 +321,7 @@ async def get_ws_auth_token():
     )
 
 
-async def validate_kick_access_token(access_token: str):
-
+def validate_kick_access_token(access_token: str):
     res = requests.post(
         "https://api.kick.com/public/v1/token/introspect",
         headers={"Authorization": "Bearer " + access_token},
@@ -346,8 +341,7 @@ async def validate_kick_access_token(access_token: str):
     return data.get("data").get("active")
 
 
-async def auth_kick_token(access_token: str):
-
+def auth_kick_token(access_token: str):
     res = requests.get(
         "https://api.kick.com/public/v1/users",
         headers={"Authorization": "Bearer " + access_token},
@@ -367,8 +361,8 @@ async def auth_kick_token(access_token: str):
     return data.get("data")[0]
 
 
-async def validate_code(code: str):
-    auth_code = await db.collection("auth-codes").document(code).get()
+def validate_code(code: str):
+    auth_code = db.collection("auth-codes").document(code).get()
 
     if not auth_code.exists:
         return {}
