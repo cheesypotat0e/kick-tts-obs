@@ -49,6 +49,8 @@ export type Settings = {
   name: string;
   voices: Map<string, GCloudVoice | NeetsVoice | FishVoice>;
   voiceVolumes: Map<string, number>;
+  wsAuthToken: string;
+  apiServiceUrl: string;
 
   bans: Map<
     string,
@@ -90,6 +92,8 @@ export class SettingsStore {
     kickApiUrl: "",
     userId: "",
     name: "",
+    wsAuthToken: "",
+    apiServiceUrl: "",
     bits: new Map([
       [
         "follow",
@@ -307,5 +311,125 @@ export class SettingsStore {
 
   private getLocalStorageKey() {
     return `${SettingsStore.baseKey}-${this.settings.roomId}`;
+  }
+}
+
+export class SettingsAPIClient<T extends Object> {
+  private readonly baseUrl: string;
+  private readonly authorizationHeader: HeadersInit;
+
+  constructor(baseUrl: string, code: string) {
+    this.baseUrl = baseUrl;
+    this.authorizationHeader = {
+      Authorization: `Bearer ${code}`,
+    };
+  }
+
+  private async authorizedFetch(
+    url: string,
+    options: RequestInit = {}
+  ): Promise<Response> {
+    const headers = {
+      ...this.authorizationHeader,
+      ...options.headers,
+    };
+
+    const fetchOptions: RequestInit = {
+      ...options,
+      headers,
+    };
+
+    return fetch(url, fetchOptions);
+  }
+
+  public async getSettings(): Promise<T | null> {
+    const response = await this.authorizedFetch(`${this.baseUrl}/settings`);
+
+    if (response.status === 404) {
+      return null;
+    }
+
+    return response.json();
+  }
+
+  public async setSettings(settings: Partial<T>) {
+    const response = await this.authorizedFetch(`${this.baseUrl}/settings`, {
+      method: "POST",
+      body: JSON.stringify(settings),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    return response.json();
+  }
+
+  public async deleteSettingsField(field: keyof T) {
+    const response = await this.authorizedFetch(
+      `${this.baseUrl}/settings/field`,
+      {
+        method: "DELETE",
+        body: JSON.stringify({ field }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.json();
+  }
+
+  public async addVoiceToSettings(voiceId: string) {
+    const response = await this.authorizedFetch(
+      `${this.baseUrl}/settings/voices`,
+      {
+        method: "POST",
+        body: JSON.stringify({ voice_id: voiceId }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.json();
+  }
+
+  public async deleteVoiceFromSettings(voiceId: string) {
+    const response = await this.authorizedFetch(
+      `${this.baseUrl}/settings/voices`,
+      {
+        method: "DELETE",
+        body: JSON.stringify({ voice_id: voiceId }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.json();
+  }
+
+  public async addBitToSettings(bitId: string, volume: number = 1.0) {
+    const response = await this.authorizedFetch(
+      `${this.baseUrl}/settings/bits`,
+      {
+        method: "POST",
+        body: JSON.stringify({ bit_id: bitId, volume }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.json();
+  }
+
+  public async deleteBitFromSettings(bitId: string) {
+    const response = await this.authorizedFetch(
+      `${this.baseUrl}/settings/bits`,
+      {
+        method: "DELETE",
+        body: JSON.stringify({ bit_id: bitId }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.json();
   }
 }

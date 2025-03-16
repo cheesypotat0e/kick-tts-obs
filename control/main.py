@@ -1,12 +1,11 @@
 import logging
 import os
-import sys
-import time
 from functools import wraps
 
 import functions_framework
 import httpx
 import jwt
+from dotenv import load_dotenv
 from flask import Flask, Request, Response, g, request
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -44,6 +43,8 @@ from .controllers import (
     update_voice,
 )
 
+load_dotenv()
+
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL")
 
 JWT_PUBLIC_KEY = os.getenv("JWT_PUBLIC_KEY")
@@ -54,13 +55,11 @@ JWT_PRIVATE_KEY = os.getenv("JWT_PRIVATE_KEY")
 
 
 app = Flask(__name__)
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
-
-# ws_client = WSClient(WS_SERVICE_URL, JWT_PRIVATE_KEY)
+# app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 
 @app.before_request
-async def before_request():
+def before_request():
     if request.method == "OPTIONS":
         return (
             "",
@@ -74,7 +73,7 @@ async def before_request():
 
 
 @app.after_request
-async def after_request(response: Response):
+def after_request(response: Response):
     response.headers["Access-Control-Allow-Origin"] = "*"
     return response
 
@@ -100,7 +99,6 @@ def require_auth(f):
                 401,
             )
 
-        start_time = time.time()
         async with httpx.AsyncClient() as client:
             res = await client.post(
                 f"{AUTH_SERVICE_URL}/validate",
@@ -125,9 +123,7 @@ def require_auth(f):
 
             user_id = res.json().get("user_id")
             g.user_id = user_id
-        end_time = time.time()
-        elapsed_time = end_time - start_time
-        logging.info(f"require_auth execution time: {elapsed_time:.4f} seconds")
+            g.name = res.json().get("name")
 
         return await f(*args, **kwargs)
 

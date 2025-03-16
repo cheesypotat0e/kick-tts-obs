@@ -9,7 +9,7 @@ import requests
 from flask import Flask, Response, g, request
 from google.cloud import firestore
 
-db = firestore.Client()
+db = firestore.AsyncClient()
 
 TTS_SERVICE_URL = os.environ.get("TTS_SERVICE_URL")
 WS_SERVICE_URL = os.environ.get("WS_SERVICE_URL")
@@ -20,7 +20,7 @@ app = Flask(__name__)
 
 
 @app.before_request
-def before_request_func():
+async def before_request_func():
     if request.method == "OPTIONS":
         return (
             "",
@@ -34,14 +34,14 @@ def before_request_func():
 
 
 @app.after_request
-def after_request_func(response: Response):
+async def after_request_func(response: Response):
     response.headers["Access-Control-Allow-Origin"] = "*"
     return response
 
 
 def require_kick_auth(f):
     @wraps(f)
-    def decorated_function(*args, **kwargs):
+    async def decorated_function(*args, **kwargs):
 
         if request.method == "OPTIONS":
             return f(*args, **kwargs)
@@ -118,14 +118,14 @@ def require_kick_auth(f):
         g.user_id = user_id
         g.name = name
 
-        return f(*args, **kwargs)
+        return await f(*args, **kwargs)
 
     return decorated_function
 
 
 def require_auth(f):
     @wraps(f)
-    def decorated_function(*args, **kwargs):
+    async def decorated_function(*args, **kwargs):
         if request.method == "OPTIONS":
             return f(*args, **kwargs)
 
@@ -157,66 +157,67 @@ def require_auth(f):
 
         g.user_id = user_id
         g.name = name
-        return f(*args, **kwargs)
+
+        return await f(*args, **kwargs)
 
     return decorated_function
 
 
 @app.get("/healthz")
-def healthz_req():
+async def healthz_req():
     return {"status": "ok"}, 200
 
 
 @app.get("/")
-def root():
+async def root():
     return {"status": "ok"}, 200
 
 
 @app.get("/code")
 @require_kick_auth
-def generate_code_req():
-    return generate_code()
+async def generate_code_req():
+    return await generate_code()
 
 
 @app.post("/validate")
 @require_auth
-def validate_code_req():
-    return validate_auth_code()
+async def validate_code_req():
+    return await validate_auth_code()
 
 
 @app.post("/auth")
 @require_auth
-def auth_req():
-    return auth_code()
+async def auth_req():
+    return await auth_code()
 
 
 @app.delete("/auth")
 @require_kick_auth
-def revoke_auth_req():
-    return revoke_auth()
+async def revoke_auth_req():
+    return await revoke_auth()
 
 
 @app.get("/ws/auth")
 @require_auth
-def get_ws_auth_token_req():
-    return get_ws_auth_token()
+async def get_ws_auth_token_req():
+    return await get_ws_auth_token()
 
 
 @functions_framework.http
-def auth_handler(request):
+async def auth_handler(request):
     with app.request_context(request.environ):
         try:
-            rv = app.preprocess_request()
+            rv = await app.preprocess_request()
             if rv is None:
-                rv = app.dispatch_request()
+                rv = await app.dispatch_request()
         except Exception as e:
             print(f"Error in auth_handler: {str(e)}")
-            rv = app.handle_user_exception(e)
+            rv = await app.handle_user_exception(e)
         response = app.make_response(rv)
-        return app.process_response(response)
+        return await app.process_response(response)
 
 
-def generate_code():
+async def generate_code():
     user_id = g.user_id
     name = g.name
 
@@ -242,7 +243,7 @@ def generate_code():
     )
 
 
-def validate_auth_code():
+async def validate_auth_code():
 
     user_id = g.user_id
 
@@ -252,7 +253,7 @@ def validate_auth_code():
     )
 
 
-def auth_code():
+async def auth_code():
 
     user_id = g.user_id
     name = g.name
@@ -285,7 +286,7 @@ def auth_code():
     )
 
 
-def revoke_auth():
+async def revoke_auth():
 
     user_id = g.user_id
 
@@ -307,7 +308,7 @@ def revoke_auth():
     )
 
 
-def get_ws_auth_token():
+async def get_ws_auth_token():
     name = g.name
 
     token = jwt.encode(
@@ -322,7 +323,7 @@ def get_ws_auth_token():
     )
 
 
-def validate_kick_access_token(access_token: str):
+async def validate_kick_access_token(access_token: str):
 
     res = requests.post(
         "https://api.kick.com/public/v1/token/introspect",
@@ -343,7 +344,7 @@ def validate_kick_access_token(access_token: str):
     return data.get("data").get("active")
 
 
-def auth_kick_token(access_token: str):
+async def auth_kick_token(access_token: str):
 
     res = requests.get(
         "https://api.kick.com/public/v1/users",
@@ -364,7 +365,7 @@ def auth_kick_token(access_token: str):
     return data.get("data")[0]
 
 
-def validate_code(code: str):
+async def validate_code(code: str):
     auth_code = db.collection("auth-codes").document(code).get()
 
     if not auth_code.exists:
