@@ -1,3 +1,4 @@
+import asyncio
 import os
 import secrets
 from datetime import datetime
@@ -20,7 +21,7 @@ app = Flask(__name__)
 
 
 @app.before_request
-async def before_request_func():
+def before_request_func():
     if request.method == "OPTIONS":
         return (
             "",
@@ -34,7 +35,7 @@ async def before_request_func():
 
 
 @app.after_request
-async def after_request_func(response: Response):
+def after_request_func(response: Response):
     response.headers["Access-Control-Allow-Origin"] = "*"
     return response
 
@@ -204,17 +205,19 @@ async def get_ws_auth_token_req():
 
 
 @functions_framework.http
-async def auth_handler(request):
+def auth_handler(request):
     with app.request_context(request.environ):
         try:
-            rv = await app.preprocess_request()
+            rv = app.preprocess_request()
             if rv is None:
-                rv = await app.dispatch_request()
+                rv = app.dispatch_request()
+            response = app.make_response(rv)
+            return app.process_response(response)
         except Exception as e:
             print(f"Error in auth_handler: {str(e)}")
-            rv = await app.handle_user_exception(e)
-        response = app.make_response(rv)
-        return await app.process_response(response)
+            rv = app.handle_user_exception(e)
+            response = app.make_response(rv)
+            return app.process_response(response)
 
 
 async def generate_code():
