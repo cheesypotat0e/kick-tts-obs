@@ -64,7 +64,7 @@ def require_kick_auth(f):
             )
 
         try:
-            res = validate_kick_access_token(token)
+            res = await validate_kick_access_token(token)
         except (UnauthorizedError, InvalidTokenError):
             return (
                 {"error": "Unauthorized by Kick"},
@@ -89,7 +89,7 @@ def require_kick_auth(f):
             )
 
         try:
-            data = auth_kick_token(token)
+            data = await auth_kick_token(token)
         except (UnauthorizedError, InvalidTokenError):
             return (
                 {"error": "Unauthorized by Kick"},
@@ -145,7 +145,7 @@ def require_auth(f):
                 401,
             )
 
-        record = validate_code(code)
+        record = await validate_code(code)
 
         if not record:
             return (
