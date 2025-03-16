@@ -11,16 +11,6 @@ type TTSState = {
   ready: boolean;
 };
 
-type AuthResponse = {
-  access_token: string;
-  refresh_token: string;
-  expiry: number;
-  scope: string;
-  tts_service_url: string;
-  user_id: string;
-  name: string;
-};
-
 export type TTSEntry = {
   text: string;
   options: {
